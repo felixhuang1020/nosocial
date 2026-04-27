@@ -151,13 +151,3 @@ Page({
     });
   }
 });
-      },
-      fail: (err) => {
-        wx.showToast({ title: '支付取消', icon: 'none' });
-      },
-      complete: () => {
-        this.setData({ ordering: false });
-      }
-    });
-  }
-});

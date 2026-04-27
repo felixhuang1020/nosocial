@@ -48,7 +48,7 @@
       size="large"
       bindtap="submitReview"
       loading="{{submitting}}"
-      disabled="{{!screenshot}}"
+      disabled="{{screenshots.length === 0}}"
     >
       提交审核
     </t-button>

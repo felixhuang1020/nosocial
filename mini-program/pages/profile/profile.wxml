@@ -201,4 +201,20 @@
   <!-- 底部安全区域 -->
   <view class="safe-area-bottom"></view>
   
+  <!-- 生日日期选择器（弹出式） -->
+  <t-date-time-picker
+    mode="date"
+    title="选择日期"
+    format="YYYY-MM-DD"
+    value="{{pickerValue}}"
+    start="1960-01-01"
+    end="{{currentDate}}"
+    visible="{{showBirthdayPicker}}"
+    confirm-btn="确认"
+    cancel-btn="取消"
+    bind:confirm="onBirthdayConfirm"
+    bind:cancel="onBirthdayCancel"
+    bind:visible-change="onBirthdayPickerVisible"
+  />
+  
 </view>

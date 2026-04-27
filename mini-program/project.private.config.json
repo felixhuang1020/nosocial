@@ -11,7 +11,7 @@
     "autoAudits": false,
     "useApiHook": true,
     "showShadowRootInWxmlPanel": false,
-    "useStaticServer": false,
+    "useStaticServer": true,
     "useLanDebug": false,
     "showES6CompileOption": false,
     "compileHotReLoad": true,

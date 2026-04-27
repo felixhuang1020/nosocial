@@ -14,7 +14,10 @@ Page({
   },
 
   onShow() {
-    this.fetchHistory();
+    // onLoad 已加载，onShow 仅在返回时刷新（historyList 非空时才触发）
+    if (this.data.historyList.length > 0) {
+      this.fetchHistory(true);
+    }
   },
 
   // 下拉刷新

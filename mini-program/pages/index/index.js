@@ -6,7 +6,7 @@ Page({
   data: {
     // 轮播图数据
     banners: [],
-    swiperImageProps: { mode: 'aspectFill', src: 'image' },
+    swiperImageProps: { mode: 'aspectFill' },
     
     // 推荐酒水
     recommendDrink: null,
@@ -77,7 +77,7 @@ Page({
       if (res && res.length > 0) {
         this.setData({
           banners: res.map(item => ({
-            image: item.image_url,
+            value: item.image_url,
             link_type: item.link_type,
             link_value: item.link_value,
             id: item.id

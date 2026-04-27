@@ -10,7 +10,10 @@ Page({
     giftInfo: null,
     giftClaimed: false,
     claiming: false,
-    giftHistory: []
+    giftHistory: [],
+    showDatePicker: false,
+    pickerValue: '',
+    currentDate: ''
   },
 
   storeBindings: null,
@@ -27,6 +30,15 @@ Page({
     if (this.storeBindings) {
       this.storeBindings.updateStoreBindings();
     }
+    // 计算当前日期作为选择器上限
+    const now = new Date();
+    const y = now.getFullYear();
+    const m = String(now.getMonth() + 1).padStart(2, '0');
+    const d = String(now.getDate()).padStart(2, '0');
+    this.setData({
+      currentDate: `${y}-${m}-${d}`,
+      pickerValue: this.data.birthday || `${y - 25}-01-01`
+    });
     this.checkBirthday();
     this.fetchGiftInfo();
     this.fetchGiftHistory();
@@ -106,31 +118,31 @@ Page({
     });
   },
 
-  // 设置生日
-  setBirthday() {
+  // 打开生日选择器
+  openDatePicker() {
     const now = new Date();
-    const currentYear = now.getFullYear();
-    
-    wx.showModal({
-      title: '设置生日',
-      editable: true,
-      placeholderText: '格式: yyyy-MM-DD',
-      content: this.data.birthday || `${currentYear - 25}-01-01`,
-      success: (res) => {
-        if (!res.confirm || !res.content) return;
-        const birthday = res.content.trim();
-        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-        if (!dateRegex.test(birthday)) {
-          wx.showToast({ title: '日期格式错误', icon: 'none' });
-          return;
-        }
-        put('/wx/user/birthday', { birthday }).then(() => {
-          wx.showToast({ title: '生日设置成功', icon: 'success' });
-          this.checkBirthday();
-        }).catch(err => {
-          wx.showToast({ title: '设置失败', icon: 'none' });
-        });
-      }
+    const y = now.getFullYear();
+    this.setData({
+      showDatePicker: true,
+      pickerValue: this.data.birthday || `${y - 25}-01-01`
     });
+  },
+
+  // 日期选择器确认
+  onDateConfirm(e) {
+    const birthday = e.detail.value;
+    this.setData({ showDatePicker: false });
+    put('/wx/user/birthday', { birthday }).then(() => {
+      appStore.updateUserField('birthday', birthday);
+      wx.showToast({ title: '生日设置成功', icon: 'success' });
+      this.checkBirthday();
+    }).catch(err => {
+      wx.showToast({ title: '设置失败', icon: 'none' });
+    });
+  },
+
+  // 日期选择器取消
+  onDateCancel() {
+    this.setData({ showDatePicker: false });
   }
 });

@@ -68,14 +68,31 @@
         </view>
         
         <t-button 
-          wx:if="{{!birthday}}"
+          wx:if="{{!birthday && !showDatePicker}}"
           theme="primary" 
           class="btn-gold-outline set-btn" 
           size="large"
-          bindtap="setBirthday"
+          bindtap="openDatePicker"
         >
           设置生日
         </t-button>
+        
+        <!-- 生日日期选择器（内联模式） -->
+        <view wx:if="{{showDatePicker}}" class="date-picker-section">
+          <t-date-time-picker
+            mode="date"
+            title="选择日期"
+            format="YYYY-MM-DD"
+            value="{{pickerValue}}"
+            start="1960-01-01"
+            end="{{currentDate}}"
+            use-popup="{{false}}"
+            confirm-btn="确认"
+            cancel-btn="取消"
+            bind:confirm="onDateConfirm"
+            bind:cancel="onDateCancel"
+          />
+        </view>
       </view>
     </block>
   </view>

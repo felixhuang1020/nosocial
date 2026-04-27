@@ -153,6 +153,16 @@
   width: 100%;
 }
 
+/* 日期选择器 */
+.date-picker-section {
+  width: 100%;
+  margin-top: 10rpx;
+  border-radius: 16rpx;
+  overflow: hidden;
+  border: 1rpx solid rgba(124, 154, 146, 0.2);
+  background: #FFFFFF;
+}
+
 /* 历史记录 */
 .history-section {
   padding: 30rpx;
