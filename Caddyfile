@@ -1,0 +1,36 @@
+# NoSocial 生产环境 Caddy 配置
+# 部署前请根据实际情况修改以下配置
+
+{
+    # 如需启用 HTTPS，请删除下一行并配置正确的域名
+    auto_https off
+}
+
+:80 {
+    # 前端静态文件托管
+    # 确保已将前端构建产物（frontend/dist）复制到 ./frontend/dist 目录
+    root * /usr/share/caddy/html
+    try_files {path} /index.html
+    file_server
+
+    # 反向代理 API 请求到后端服务
+    # Linux Docker 访问宿主机默认网桥地址为 172.17.0.1
+    # 如果后端也在 Docker 中运行，请将地址改为后端服务名，如 backend:8080
+    @api {
+        path /api/*
+    }
+    reverse_proxy @api 172.17.0.1:8080
+
+    # 日志输出
+    log {
+        output file /data/access.log
+        format json
+    }
+
+    # 响应头安全加固
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options DENY
+        X-XSS-Protection "1; mode=block"
+    }
+}

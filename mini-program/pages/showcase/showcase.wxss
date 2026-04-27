@@ -1,0 +1,125 @@
+/* ============================================
+   展示页样式 - 瀑布流画廊
+   ============================================ */
+
+.page-header {
+  padding: 40rpx 30rpx 20rpx;
+  text-align: center;
+}
+
+.page-title {
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #7C9A92;
+  display: block;
+  margin-bottom: 12rpx;
+  letter-spacing: 4rpx;
+}
+
+.page-subtitle {
+  font-size: 26rpx;
+  color: #6B7280;
+}
+
+/* 瀑布流画廊 */
+.gallery-section {
+  padding: 20rpx 20rpx;
+}
+
+.gallery-waterfall {
+  display: flex;
+  gap: 16rpx;
+}
+
+.gallery-column {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.gallery-item {
+  position: relative;
+  border-radius: 20rpx;
+  overflow: hidden;
+  background: #FFFFFF;
+  opacity: 0;
+  transform: translateY(30rpx);
+  transition: all 0.5s ease;
+}
+
+.gallery-item.loaded {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.gallery-image {
+  width: 100%;
+  display: block;
+  border-radius: 20rpx;
+}
+
+.gallery-overlay {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(transparent, rgba(245, 246, 248, 0.9));
+  padding: 40rpx 20rpx 20rpx;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.gallery-item:active .gallery-overlay {
+  opacity: 1;
+}
+
+.gallery-title {
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #1A1D23;
+  display: block;
+}
+
+.gallery-desc {
+  font-size: 22rpx;
+  color: #9CA3AF;
+  margin-top: 8rpx;
+  display: block;
+}
+
+/* 加载更多 */
+.loading-more {
+  display: flex;
+  justify-content: center;
+  padding: 30rpx 0;
+}
+
+.loading-text {
+  color: #6B7280 !important;
+  font-size: 24rpx !important;
+}
+
+.no-more {
+  padding: 20rpx 60rpx 40rpx;
+}
+
+.divider-text {
+  color: #6B7280 !important;
+  font-size: 22rpx !important;
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 200rpx 60rpx;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #6B7280;
+  margin-top: 20rpx;
+}

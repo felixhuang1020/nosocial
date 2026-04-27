@@ -1,0 +1,58 @@
+<view class="container">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <text class="page-title">我的优惠券</text>
+    <text class="page-subtitle">共 {{couponList.length}} 张优惠券</text>
+  </view>
+  
+  <!-- 优惠券列表 -->
+  <view class="coupon-list">
+    <view 
+      class="coupon-card {{item.status !== 0 ? 'disabled' : ''}}" 
+      wx:for="{{couponList}}" 
+      wx:key="id"
+    >
+      <view class="coupon-left">
+        <view class="coupon-amount">
+          <text class="amount-symbol">¥</text>
+          <text class="amount-value">{{item.amount}}</text>
+        </view>
+        <text class="coupon-condition" wx:if="{{item.min_order_amount > 0}}">
+          满¥{{item.min_order_amount}}可用
+        </text>
+        <text class="coupon-condition" wx:if="{{item.min_order_amount === 0}}">
+          无门槛
+        </text>
+      </view>
+      
+      <view class="coupon-divider">
+        <view class="divider-dot top"></view>
+        <view class="divider-line"></view>
+        <view class="divider-dot bottom"></view>
+      </view>
+      
+      <view class="coupon-right">
+        <view class="coupon-info">
+          <text class="coupon-name">{{item.name}}</text>
+          <text class="coupon-type">{{item.typeName}}</text>
+          <text class="coupon-valid">有效期: {{item.valid_start}} 至 {{item.valid_end}}</text>
+        </view>
+        <view class="coupon-status">
+          <text class="status-badge {{item.status === 0 ? 'unused' : (item.status === 1 ? 'used' : 'expired')}}">
+            {{item.statusName}}
+          </text>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{!loading && couponList.length === 0}}">
+    <t-empty icon="coupon" description="暂无优惠券">
+      <text slot="action" class="empty-tip">点评返券、生日礼可获得优惠券</text>
+    </t-empty>
+  </view>
+  
+  <!-- 底部安全区域 -->
+  <view class="safe-area-bottom"></view>
+</view>

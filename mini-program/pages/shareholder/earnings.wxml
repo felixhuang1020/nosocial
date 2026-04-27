@@ -1,0 +1,78 @@
+<view class="container">
+  <!-- 收益概览 -->
+  <view class="overview-section">
+    <view class="overview-card">
+      <view class="overview-item">
+        <text class="overview-value">¥{{totalEarning}}</text>
+        <text class="overview-label">累计收益</text>
+      </view>
+      <view class="overview-divider"></view>
+      <view class="overview-item">
+        <text class="overview-value">¥{{balance}}</text>
+        <text class="overview-label">可提现余额</text>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 快捷操作 -->
+  <view class="action-section">
+    <t-button 
+      theme="primary" 
+      class="btn-gold withdraw-btn" 
+      bindtap="withdraw"
+      disabled="{{balance <= 0}}"
+    >
+      申请提现
+    </t-button>
+    <t-button 
+      variant="outline" 
+      class="btn-gold-outline share-btn" 
+      bindtap="shareInvite"
+    >
+      邀请好友
+    </t-button>
+  </view>
+  
+  <!-- 邀请码展示 -->
+  <view class="invite-section" wx:if="{{inviteCode}}">
+    <view class="invite-card" bindtap="copyInviteCode">
+      <text class="invite-label">我的邀请码</text>
+      <text class="invite-code">{{inviteCode}}</text>
+      <text class="invite-tip">点击复制</text>
+    </view>
+  </view>
+  
+  <!-- 收益记录 -->
+  <view class="record-section">
+    <view class="record-header">
+      <view class="record-title-wrapper">
+        <view class="title-line"></view>
+        <text>收益明细</text>
+      </view>
+    </view>
+    
+    <view class="record-list">
+      <view class="record-item" wx:for="{{earningsList}}" wx:key="id">
+        <view class="record-info">
+          <text class="record-consumer">{{item.consumer_name || '好友消费'}}</text>
+          <text class="record-order">订单 ¥{{item.order_amount}}</text>
+          <text class="record-date">{{item.created_at}}</text>
+        </view>
+        <view class="record-amount">
+          <text class="amount-value">+¥{{item.commission_amount}}</text>
+          <text class="amount-rate">{{item.commission_rate * 100}}%</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{!loading && earningsList.length === 0}}">
+      <t-empty icon="chart" description="暂无收益记录">
+        <text slot="action" class="empty-tip">分享邀请码给好友，好友消费后你即可获得佣金</text>
+      </t-empty>
+    </view>
+  </view>
+  
+  <!-- 底部安全区域 -->
+  <view class="safe-area-bottom"></view>
+</view>

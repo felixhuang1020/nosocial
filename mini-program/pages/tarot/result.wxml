@@ -1,0 +1,100 @@
+<view class="container">
+  <!-- 加载状态 -->
+  <view class="loading-container" wx:if="{{!card.name}}">
+    <t-loading theme="circular" size="80rpx" text="加载中..." />
+  </view>
+  
+  <!-- 占卜结果标题 -->
+  <view class="result-header" wx:if="{{card.name}}">
+    <view class="result-stars">✦ ✦ ✦</view>
+    <text class="result-title">塔罗指引</text>
+    <view class="result-stars">✦ ✦ ✦</view>
+  </view>
+  
+  <!-- 抽到的牌 -->
+  <view class="card-result-section">
+    <view class="card-display {{isReversed ? 'reversed' : ''}}">
+      <image class="card-image" src="{{card.image_url}}" mode="aspectFit" />
+      <view class="card-position-badge {{isReversed ? 'badge-reversed' : 'badge-upright'}}">
+        <text>{{isReversed ? '逆位' : '正位'}}</text>
+      </view>
+    </view>
+    
+    <view class="card-info">
+      <text class="card-name">{{card.name}}</text>
+      <view class="card-meaning">
+        <text class="meaning-label">牌意解读</text>
+        <text class="meaning-text">{{meaning}}</text>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 推荐酒水 -->
+  <view class="recommend-section" wx:if="{{recommend && recommend.name}}">
+    <view class="section-header">
+      <view class="section-title-wrapper">
+        <view class="title-line"></view>
+        <text>今夜推荐</text>
+      </view>
+    </view>
+
+    <view class="recommend-card" bindtap="navigateToDrink">
+      <image class="recommend-image" src="{{recommend.image_url}}" mode="aspectFill" wx:if="{{recommend.image_url}}" />
+      <view class="recommend-content">
+        <view class="recommend-header">
+          <view>
+            <text class="recommend-name">{{recommend.name}}</text>
+            <text class="recommend-enname" wx:if="{{recommend.english_name}}">{{recommend.english_name}}</text>
+          </view>
+          <view class="recommend-price" wx:if="{{recommend.price !== undefined}}">
+            <text class="price-symbol">¥</text>
+            <text class="price-value">{{recommend.price}}</text>
+          </view>
+        </view>
+
+        <view class="recommend-reason" wx:if="{{recommend.reason}}">
+          <t-icon name="quote" size="28rpx" color="#7C9A92" />
+          <text>{{recommend.reason}}</text>
+        </view>
+
+        <view class="recommend-meta">
+          <text class="meta-tag" wx:if="{{recommend.alcohol}}">{{recommend.alcohol}}% VOL</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 无推荐 -->
+  <view class="recommend-section" wx:if="{{!recommend || !recommend.name}}">
+    <view class="section-header">
+      <view class="section-title-wrapper">
+        <view class="title-line"></view>
+        <text>今夜推荐</text>
+      </view>
+    </view>
+    <view class="no-recommend">
+      <t-empty icon="wine" description="暂无推荐酒水" />
+    </view>
+  </view>
+  
+  <!-- 操作按钮 -->
+  <view class="action-buttons">
+    <t-button 
+      theme="primary" 
+      class="btn-gold action-btn" 
+      bindtap="navigateToDrink"
+    >
+      查看酒水详情
+    </t-button>
+    <t-button 
+      variant="outline" 
+      class="btn-gold-outline action-btn" 
+      bindtap="divineAgain"
+    >
+      再占一次
+    </t-button>
+  </view>
+  
+  <!-- 底部安全区域 -->
+  <view class="safe-area-bottom"></view>
+</view>

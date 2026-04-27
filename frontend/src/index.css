@@ -1,0 +1,81 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 220 14% 96%;
+    --foreground: 220 15% 12%;
+    --card: 0 0% 100%;
+    --card-foreground: 220 15% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 220 15% 12%;
+    --primary: 155 14% 54%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 220 14% 95%;
+    --secondary-foreground: 220 15% 12%;
+    --muted: 220 14% 95%;
+    --muted-foreground: 220 9% 46%;
+    --accent: 220 14% 95%;
+    --accent-foreground: 220 15% 12%;
+    --destructive: 0 45% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 220 13% 91%;
+    --input: 220 13% 91%;
+    --ring: 155 14% 54%;
+    --radius: 0.625rem;
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 220 9% 46%;
+    --sidebar-primary: 155 14% 54%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 220 14% 96%;
+    --sidebar-accent-foreground: 220 15% 12%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 155 14% 54%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    @apply scroll-smooth;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  }
+}
+
+@layer utilities {
+  .font-mono {
+    font-family: 'JetBrains Mono', monospace;
+  }
+  .text-gold {
+    color: hsl(var(--primary));
+  }
+  .bg-gold {
+    background-color: hsl(var(--primary));
+  }
+  .bg-gold-dim {
+    background-color: rgba(124, 154, 146, 0.12);
+  }
+  .border-gold {
+    border-color: hsl(var(--primary));
+  }
+  .shadow-gold {
+    box-shadow: 0 4px 16px rgba(124, 154, 146, 0.25);
+  }
+  .gradient-gold-line {
+    background: linear-gradient(90deg, transparent 0%, hsl(var(--primary)) 50%, transparent 100%);
+  }
+  .gradient-hero {
+    background: linear-gradient(135deg, #F5F6F8 0%, #EDF0F2 50%, #F5F6F8 100%);
+  }
+  .gradient-gold-glow {
+    background: radial-gradient(circle at center, rgba(124, 154, 146, 0.08) 0%, transparent 70%);
+  }
+}

@@ -1,0 +1,204 @@
+<view class="container">
+  <!-- 用户信息卡片 -->
+  <view class="user-card">
+    <view class="user-bg"></view>
+    <view class="user-content">
+      <!-- 未登录状态 -->
+      <block wx:if="{{!isLogin}}">
+        <view class="login-section">
+          <view class="login-avatar">
+            <t-icon name="user-circle" size="120rpx" color="#6B7280" />
+          </view>
+          <text class="login-tip">登录后享受更多功能</text>
+          <t-button 
+            theme="primary" 
+            class="btn-gold login-btn" 
+            bindtap="handleLogin"
+            loading="{{loginLoading}}"
+          >
+            微信一键登录
+          </t-button>
+        </view>
+      </block>
+      
+      <!-- 已登录状态 -->
+      <block wx:if="{{isLogin}}">
+        <view class="user-info">
+          <image class="user-avatar" src="{{avatar}}" mode="aspectFill" wx:if="{{avatar}}" />
+          <view class="user-avatar default-avatar" wx:if="{{!avatar}}">
+            <t-icon name="user-circle" size="80rpx" color="#6B7280" />
+          </view>
+          <view class="user-detail">
+            <view class="user-name-row">
+              <text class="user-name">{{nickname || '酒友'}}</text>
+              <view class="user-tag shareholder-tag" wx:if="{{isShareholder}}">
+                <t-icon name="vip" size="20rpx" color="#7C9A92" />
+                <text>股东</text>
+              </view>
+              <view class="user-tag member-tag" wx:if="{{!isShareholder}}">
+                <text>会员</text>
+              </view>
+            </view>
+            <text class="user-id" wx:if="{{inviteCode}}">邀请码: {{inviteCode}}</text>
+          </view>
+        </view>
+        
+        <!-- 股东数据 -->
+        <view class="shareholder-stats" wx:if="{{isShareholder}}">
+          <view class="stat-item" bindtap="navigateToEarnings">
+            <text class="stat-value">¥{{totalEarning}}</text>
+            <text class="stat-label">累计收益</text>
+          </view>
+          <view class="stat-divider"></view>
+          <view class="stat-item" bindtap="navigateToEarnings">
+            <text class="stat-value">¥{{balance}}</text>
+            <text class="stat-label">可提现</text>
+          </view>
+          <view class="stat-divider"></view>
+          <view class="stat-item" bindtap="navigateToTeam">
+            <text class="stat-value">{{teamCount}}</text>
+            <text class="stat-label">我的团队</text>
+          </view>
+        </view>
+      </block>
+    </view>
+  </view>
+  
+  <!-- 功能菜单 -->
+  <view class="menu-section" wx:if="{{isLogin}}">
+    <!-- 股东相关 -->
+    <view class="menu-group" wx:if="{{isShareholder}}">
+      <view class="menu-title">股东中心</view>
+      <t-cell-group>
+        <t-cell 
+          title="收益明细" 
+          arrow 
+          bindtap="navigateToEarnings"
+          t-class="menu-cell"
+          t-class-title="menu-cell-title"
+        >
+          <t-icon slot="left-icon" name="chart" size="40rpx" color="#7C9A92" />
+        </t-cell>
+        <t-cell 
+          title="我的团队" 
+          arrow 
+          bindtap="navigateToTeam"
+          t-class="menu-cell"
+          t-class-title="menu-cell-title"
+        >
+          <t-icon slot="left-icon" name="user-group" size="40rpx" color="#7C9A92" />
+        </t-cell>
+        <t-cell 
+          title="邀请好友" 
+          arrow 
+          bindtap="shareInvite"
+          t-class="menu-cell"
+          t-class-title="menu-cell-title"
+        >
+          <t-icon slot="left-icon" name="share" size="40rpx" color="#7C9A92" />
+        </t-cell>
+      </t-cell-group>
+    </view>
+    
+    <!-- 非股东显示申请入口 -->
+    <view class="menu-group" wx:if="{{!isShareholder}}">
+      <view class="menu-title">加入股东</view>
+      <view class="become-shareholder-card" bindtap="navigateToApply">
+        <view class="bsc-content">
+          <t-icon name="money-circle" size="64rpx" color="#7C9A92" />
+          <view class="bsc-text">
+            <text class="bsc-title">成为共享股东</text>
+            <text class="bsc-desc">分享得佣金 · 免费鸡尾酒 · 生日礼品</text>
+          </view>
+        </view>
+        <t-icon name="chevron-right" size="40rpx" color="#6B7280" />
+      </view>
+    </view>
+    
+    <!-- 我的服务 -->
+    <view class="menu-group">
+      <view class="menu-title">我的服务</view>
+      <t-cell-group>
+        <t-cell 
+          title="我的订单" 
+          arrow 
+          bindtap="navigateToOrders"
+          t-class="menu-cell"
+          t-class-title="menu-cell-title"
+        >
+          <t-icon slot="left-icon" name="order" size="40rpx" color="#7C9A92" />
+        </t-cell>
+        <t-cell 
+          title="我的优惠券" 
+          arrow 
+          bindtap="navigateToCoupons"
+          t-class="menu-cell"
+          t-class-title="menu-cell-title"
+        >
+          <t-icon slot="left-icon" name="coupon" size="40rpx" color="#7C9A92" />
+        </t-cell>
+        <t-cell 
+          title="占卜历史" 
+          arrow 
+          bindtap="navigateToTarotHistory"
+          t-class="menu-cell"
+          t-class-title="menu-cell-title"
+        >
+          <t-icon slot="left-icon" name="history" size="40rpx" color="#7C9A92" />
+        </t-cell>
+        <t-cell 
+          title="生日设置" 
+          arrow 
+          bindtap="setBirthday"
+          t-class="menu-cell"
+          t-class-title="menu-cell-title"
+        >
+          <t-icon slot="left-icon" name="calendar" size="40rpx" color="#7C9A92" />
+          <view slot="note" class="cell-note">{{birthday || '未设置'}}</view>
+        </t-cell>
+      </t-cell-group>
+    </view>
+    
+    <!-- 其他 -->
+    <view class="menu-group">
+      <view class="menu-title">其他</view>
+      <t-cell-group>
+        <t-cell 
+          title="联系客服" 
+          arrow 
+          bindtap="contactService"
+          t-class="menu-cell"
+          t-class-title="menu-cell-title"
+        >
+          <t-icon slot="left-icon" name="service" size="40rpx" color="#7C9A92" />
+        </t-cell>
+        <t-cell 
+          title="关于我们" 
+          arrow 
+          bindtap="aboutUs"
+          t-class="menu-cell"
+          t-class-title="menu-cell-title"
+        >
+          <t-icon slot="left-icon" name="info-circle" size="40rpx" color="#7C9A92" />
+        </t-cell>
+      </t-cell-group>
+    </view>
+    
+    <!-- 退出登录 -->
+    <view class="logout-section">
+      <t-button 
+        theme="danger" 
+        variant="outline" 
+        block
+        bindtap="logout"
+        class="logout-btn"
+      >
+        退出登录
+      </t-button>
+    </view>
+  </view>
+  
+  <!-- 底部安全区域 -->
+  <view class="safe-area-bottom"></view>
+  
+</view>

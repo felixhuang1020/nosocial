@@ -1,0 +1,62 @@
+<view class="order-page">
+  <!-- 未登录状态 -->
+  <view wx:if="{{!isLogin}}" class="login-tip">
+    <t-empty icon="user" description="请先登录后查看订单">
+      <t-button theme="primary" variant="outline" bind:tap="goLogin" class="login-btn">去登录</t-button>
+    </t-empty>
+  </view>
+
+  <!-- 已登录 -->
+  <view wx:else>
+    <!-- 空状态 -->
+    <view wx:if="{{orders.length === 0 && !loading}}" class="empty-state">
+      <t-empty icon="order" description="暂无订单">
+        <t-button theme="primary" variant="outline" bind:tap="goOrder" class="order-btn">去点单</t-button>
+      </t-empty>
+    </view>
+
+    <!-- 订单列表 -->
+    <view wx:else class="order-list">
+      <view wx:for="{{orders}}" wx:key="id" class="order-card" data-id="{{item.id}}">
+        <view class="order-header">
+          <text class="order-no">订单号: {{item.order_no}}</text>
+          <t-tag theme="{{item.status === 0 ? 'warning' : item.status === 1 ? 'success' : item.status === 2 ? 'primary' : item.status === 3 ? 'default' : 'danger'}}" variant="light">
+            {{item.statusText}}
+          </t-tag>
+        </view>
+        <view class="order-body">
+          <view class="order-info">
+            <view class="info-row">
+              <text class="label">总金额</text>
+              <text class="value amount">¥{{item.total_amount}}</text>
+            </view>
+            <view class="info-row" wx:if="{{item.discount_amount > 0}}">
+              <text class="label">优惠</text>
+              <text class="value discount">-¥{{item.discount_amount}}</text>
+            </view>
+            <view class="info-row">
+              <text class="label">实付</text>
+              <text class="value pay-amount">¥{{item.pay_amount}}</text>
+            </view>
+            <view class="info-row">
+              <text class="label">时间</text>
+              <text class="value time">{{item.created_at}}</text>
+            </view>
+          </view>
+        </view>
+        <view class="order-footer" wx:if="{{item.status === 0}}">
+          <t-button theme="primary" size="small" bind:tap="payOrder" data-id="{{item.id}}">立即支付</t-button>
+          <t-button theme="default" size="small" variant="outline" bind:tap="cancelOrder" data-id="{{item.id}}">取消订单</t-button>
+        </view>
+      </view>
+
+      <!-- 加载更多 -->
+      <view class="load-more" wx:if="{{loading}}">
+        <t-loading size="40rpx" text="加载中..." />
+      </view>
+      <view class="no-more" wx:if="{{!hasMore && orders.length > 0}}">
+        <text>没有更多了</text>
+      </view>
+    </view>
+  </view>
+</view>

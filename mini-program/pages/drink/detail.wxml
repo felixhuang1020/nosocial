@@ -1,0 +1,115 @@
+<view class="container">
+  <!-- 加载状态 -->
+  <view class="loading-container" wx:if="{{!drink.id}}">
+    <t-loading theme="circular" size="80rpx" text="加载中..." />
+  </view>
+  
+  <!-- 酒水图片 -->
+  <view class="drink-hero" wx:if="{{drink.id}}">
+    <image class="drink-hero-image" src="{{drink.image_url}}" mode="aspectFill" />
+    <view class="drink-hero-overlay">
+      <view class="drink-badges">
+        <view class="hero-badge recommend" wx:if="{{drink.is_recommended}}">
+          <t-icon name="heart-filled" size="22rpx" color="#fff" />
+          <text>店长推荐</text>
+        </view>
+        <view class="hero-badge free" wx:if="{{drink.is_free_drink}}">
+          <text>股东免费</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 酒水信息 -->
+  <view class="drink-detail-card">
+    <view class="drink-name-section">
+      <view class="drink-name-wrapper">
+        <text class="drink-name">{{drink.name}}</text>
+        <text class="drink-enname">{{drink.english_name}}</text>
+      </view>
+      <view class="drink-price">
+        <text class="price-symbol">¥</text>
+        <text class="price-value">{{drink.price}}</text>
+      </view>
+    </view>
+    
+    <view class="drink-meta-row">
+      <view class="meta-chip">
+        <t-icon name="wine" size="24rpx" color="#7C9A92" />
+        <text>{{drink.alcohol}}% VOL</text>
+      </view>
+      <view class="meta-chip">
+        <t-icon name="cup" size="24rpx" color="#7C9A92" />
+        <text>{{drink.volume}}</text>
+      </view>
+      <view class="meta-chip" wx:if="{{drink.category_name}}">
+        <t-icon name="folder" size="24rpx" color="#7C9A92" />
+        <text>{{drink.category_name}}</text>
+      </view>
+    </view>
+    
+    <!-- 分割线 -->
+    <view class="gold-divider"></view>
+    
+    <!-- 描述 -->
+    <view class="drink-section">
+      <view class="section-label">
+        <view class="label-line"></view>
+        <text>酒水介绍</text>
+      </view>
+      <text class="drink-description">{{drink.description || '暂无描述'}}</text>
+    </view>
+    
+    <!-- 配料 -->
+    <view class="drink-section" wx:if="{{drink.ingredients}}">
+      <view class="section-label">
+        <view class="label-line"></view>
+        <text>配料成分</text>
+      </view>
+      <view class="ingredients-list">
+        <text class="ingredient-tag" wx:for="{{ingredientList}}" wx:key="*this">{{item}}</text>
+      </view>
+    </view>
+    
+    <!-- 分割线 -->
+    <view class="gold-divider"></view>
+    
+    <!-- 塔罗推荐 -->
+    <view class="drink-section tarot-recommend" wx:if="{{drink.tarot_card && drink.tarot_card.name}}">
+      <view class="section-label">
+        <view class="label-line"></view>
+        <text>塔罗关联</text>
+      </view>
+      <view class="tarot-card-mini">
+        <image class="tarot-mini-image" src="{{drink.tarot_card.image_url}}" mode="aspectFill" wx:if="{{drink.tarot_card.image_url}}" />
+        <view class="tarot-mini-info">
+          <text class="tarot-mini-name">{{drink.tarot_card.name}}</text>
+          <text class="tarot-mini-meaning" wx:if="{{drink.tarot_card.meaning}}">{{drink.tarot_card.meaning}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 底部操作栏 -->
+  <view class="bottom-bar">
+    <view class="bottom-price" wx:if="{{!isFreeDrink}}">
+      <text class="bottom-label">合计</text>
+      <text class="bottom-value">¥{{drink.price}}</text>
+    </view>
+    <view class="bottom-price free-text" wx:if="{{isFreeDrink}}">
+      <text class="bottom-label">股东特权</text>
+      <text class="bottom-value">免费</text>
+    </view>
+    <t-button 
+      theme="primary" 
+      class="btn-gold order-btn" 
+      bindtap="placeOrder"
+      loading="{{ordering}}"
+    >
+      {{isFreeDrink ? '免费领取' : '立即下单'}}
+    </t-button>
+  </view>
+  
+  <!-- 底部安全区域 -->
+  <view class="safe-area-bottom" style="height: calc(120rpx + env(safe-area-inset-bottom));"></view>
+</view>

@@ -1,0 +1,101 @@
+<view class="container">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <t-icon name="gift" size="64rpx" color="#7C9A92" />
+    <text class="page-title">生日有礼</text>
+    <text class="page-subtitle">股东专属生日福利</text>
+  </view>
+  
+  <!-- 生日状态 -->
+  <view class="birthday-section">
+    <!-- 今天是生日 -->
+    <block wx:if="{{isBirthday}}">
+      <view class="birthday-card celebrate">
+        <view class="birthday-animation">
+          <text class="birthday-emoji">🎂 🎉 🎁</text>
+        </view>
+        <text class="birthday-title">生日快乐！</text>
+        <text class="birthday-desc">今天是你的生日，我们为你准备了专属礼品</text>
+        
+        <view class="gift-item" wx:if="{{giftInfo}}">
+          <view class="gift-icon">
+            <t-icon name="wine" size="48rpx" color="#7C9A92" />
+          </view>
+          <view class="gift-detail">
+            <text class="gift-name">{{giftInfo.gift_name}}</text>
+            <text class="gift-value">价值 ¥{{giftInfo.gift_value}}</text>
+          </view>
+        </view>
+        
+        <t-button 
+          theme="primary" 
+          class="btn-gold claim-btn" 
+          size="large"
+          bindtap="claimGift"
+          loading="{{claiming}}"
+          disabled="{{giftClaimed}}"
+        >
+          {{giftClaimed ? '已领取' : '立即领取'}}
+        </t-button>
+      </view>
+    </block>
+    
+    <!-- 不是今天 -->
+    <block wx:if="{{!isBirthday}}">
+      <view class="birthday-card">
+        <view class="birthday-calendar">
+          <t-icon name="calendar" size="80rpx" color="#7C9A92" />
+        </view>
+        <text class="birthday-title" wx:if="{{birthday}}">你的生日是 {{birthday}}</text>
+        <text class="birthday-title" wx:if="{{!birthday}}">尚未设置生日</text>
+        
+        <text class="birthday-desc" wx:if="{{birthday && daysUntil > 0}}">
+          距离生日还有 {{daysUntil}} 天
+        </text>
+        <text class="birthday-desc" wx:if="{{birthday && daysUntil === 0}}">
+          明天就是生日啦！
+        </text>
+        <text class="birthday-desc" wx:if="{{!birthday}}">
+          设置生日后，生日当天可领取专属礼品
+        </text>
+        
+        <view class="gift-preview">
+          <view class="preview-title">生日礼品预览</view>
+          <view class="preview-item">
+            <t-icon name="wine" size="36rpx" color="#7C9A92" />
+            <text>生日特调鸡尾酒一杯</text>
+          </view>
+        </view>
+        
+        <t-button 
+          wx:if="{{!birthday}}"
+          theme="primary" 
+          class="btn-gold-outline set-btn" 
+          size="large"
+          bindtap="setBirthday"
+        >
+          设置生日
+        </t-button>
+      </view>
+    </block>
+  </view>
+  
+  <!-- 历史记录 -->
+  <view class="history-section" wx:if="{{giftHistory.length > 0}}">
+    <view class="history-title">领取记录</view>
+    <view class="history-list">
+      <view class="history-item" wx:for="{{giftHistory}}" wx:key="id">
+        <view class="history-info">
+          <text class="history-name">{{item.gift_name}}</text>
+          <text class="history-year">{{item.year}}年</text>
+        </view>
+        <view class="history-status {{item.status === 1 ? 'claimed' : ''}}">
+          {{item.status === 1 ? '已领取' : '未领取'}}
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 底部安全区域 -->
+  <view class="safe-area-bottom"></view>
+</view>

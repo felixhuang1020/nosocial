@@ -1,0 +1,17 @@
+{
+  "name": "nosocial-wxapp",
+  "version": "1.0.0",
+  "description": "NoSocial 酒吧小程序 - 顾客端",
+  "main": "app.js",
+  "scripts": {
+    "dev": "echo '请使用微信开发者工具打开本项目'",
+    "build": "echo '请使用微信开发者工具构建'"
+  },
+  "dependencies": {
+    "mobx-miniprogram": "^6.12.3",
+    "mobx-miniprogram-bindings": "^6.0.0",
+    "tdesign-miniprogram": "^1.13.2"
+  },
+  "author": "NoSocial Team",
+  "license": "MIT"
+}

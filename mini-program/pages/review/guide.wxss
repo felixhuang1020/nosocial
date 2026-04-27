@@ -1,0 +1,149 @@
+/* ============================================
+   点评引导页样式
+   ============================================ */
+
+.page-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40rpx 30rpx 30rpx;
+}
+
+.page-title {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #7C9A92;
+  margin-top: 16rpx;
+  margin-bottom: 8rpx;
+}
+
+.page-subtitle {
+  font-size: 26rpx;
+  color: #6B7280;
+}
+
+/* 步骤说明 */
+.steps-section {
+  padding: 0 40rpx;
+}
+
+.step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 24rpx;
+}
+
+.step-number {
+  width: 56rpx;
+  height: 56rpx;
+  background: linear-gradient(135deg, #7C9A92, #5F8578);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  font-weight: 700;
+  color: #F5F6F8;
+  flex-shrink: 0;
+}
+
+.step-content {
+  flex: 1;
+  padding-top: 6rpx;
+  padding-bottom: 30rpx;
+}
+
+.step-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #1A1D23;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.step-desc {
+  font-size: 24rpx;
+  color: #6B7280;
+  line-height: 1.5;
+}
+
+.step-connector {
+  width: 2rpx;
+  height: 40rpx;
+  background: linear-gradient(180deg, #7C9A92, #6B7280);
+  margin-left: 27rpx;
+}
+
+/* 奖励说明 */
+.reward-section {
+  padding: 30rpx 40rpx;
+}
+
+.reward-card {
+  background: linear-gradient(145deg, rgba(124, 154, 146, 0.15), rgba(124, 154, 146, 0.05));
+  border: 1rpx solid rgba(124, 154, 146, 0.3);
+  border-radius: 24rpx;
+  padding: 30rpx;
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.reward-content {
+  flex: 1;
+}
+
+.reward-title {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #7C9A92;
+  display: block;
+  margin-bottom: 8rpx;
+}
+
+.reward-desc {
+  font-size: 26rpx;
+  color: #1A1D23;
+  display: block;
+  margin-bottom: 4rpx;
+}
+
+.reward-note {
+  font-size: 22rpx;
+  color: #6B7280;
+}
+
+/* 底部按钮 */
+.bottom-bar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(245, 246, 248, 0.95);
+  backdrop-filter: blur(20rpx);
+  border-top: 1rpx solid rgba(124, 154, 146, 0.15);
+  padding: 20rpx 40rpx;
+  padding-bottom: calc(20rpx + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20rpx;
+  z-index: 100;
+}
+
+.goto-btn {
+  width: 100%;
+}
+
+.already-reviewed {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  font-size: 26rpx;
+  color: #6B7280;
+}
+
+.upload-link {
+  color: #7C9A92;
+  text-decoration: underline;
+}

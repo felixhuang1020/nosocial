@@ -1,0 +1,91 @@
+<view class="container">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <t-icon name="crown" size="64rpx" color="#7C9A92" />
+    <text class="page-title">成为共享股东</text>
+    <text class="page-subtitle">分享美酒，赚取佣金</text>
+  </view>
+  
+  <!-- 权益卡片 -->
+  <view class="benefits-section">
+    <view class="benefit-card">
+      <view class="benefit-icon gold-gradient">
+        <t-icon name="money-circle" size="48rpx" color="#FFFFFF" />
+      </view>
+      <view class="benefit-content">
+        <text class="benefit-title">分享得佣金</text>
+        <text class="benefit-desc">好友通过你的邀请码消费，你获得10%佣金奖励</text>
+      </view>
+    </view>
+    
+    <view class="benefit-card">
+      <view class="benefit-icon rose-gradient">
+        <t-icon name="wine" size="48rpx" color="#FFFFFF" />
+      </view>
+      <view class="benefit-content">
+        <text class="benefit-title">免费鸡尾酒</text>
+        <text class="benefit-desc">注册即送一杯精选鸡尾酒，价值88元</text>
+      </view>
+    </view>
+    
+    <view class="benefit-card">
+      <view class="benefit-icon purple-gradient">
+        <t-icon name="gift" size="48rpx" color="#FFFFFF" />
+      </view>
+      <view class="benefit-content">
+        <text class="benefit-title">生日专属礼品</text>
+        <text class="benefit-desc">生日当天可领取特调生日鸡尾酒一杯</text>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 费用说明 -->
+  <view class="fee-section">
+    <view class="fee-card">
+      <text class="fee-label">股东注册费</text>
+      <view class="fee-price">
+        <text class="fee-symbol">¥</text>
+        <text class="fee-value">{{registerFee}}</text>
+      </view>
+      <text class="fee-note">一次性费用，终身有效</text>
+    </view>
+  </view>
+  
+  <!-- 规则说明 -->
+  <view class="rules-section">
+    <view class="rules-title">佣金规则</view>
+    <view class="rule-item">
+      <view class="rule-dot"></view>
+      <text class="rule-text">一级佣金比例：10%（好友消费金额的10%）</text>
+    </view>
+    <view class="rule-item">
+      <view class="rule-dot"></view>
+      <text class="rule-text">结算时机：订单完成后 T+1 自动结算</text>
+    </view>
+    <view class="rule-item">
+      <view class="rule-dot"></view>
+      <text class="rule-text">提现门槛：满50元可申请提现</text>
+    </view>
+    <view class="rule-item">
+      <view class="rule-dot"></view>
+      <text class="rule-text">提现手续费：1%</text>
+    </view>
+  </view>
+  
+  <!-- 底部按钮 -->
+  <view class="bottom-bar">
+    <t-button 
+      theme="primary" 
+      class="btn-gold pay-btn" 
+      size="large"
+      bindtap="applyShareholder"
+      loading="{{paying}}"
+    >
+      <text>立即加入 ¥{{registerFee}}</text>
+    </t-button>
+  </view>
+  
+  <!-- 底部安全区域 -->
+  <view class="safe-area-bottom" style="height: calc(140rpx + env(safe-area-inset-bottom));"></view>
+  
+</view>

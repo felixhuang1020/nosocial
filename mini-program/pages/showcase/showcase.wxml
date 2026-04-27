@@ -1,0 +1,78 @@
+<view class="container">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <text class="page-title">精选展示</text>
+    <text class="page-subtitle">每一杯酒，都是一段故事</text>
+  </view>
+  
+  <!-- 瀑布流画廊 -->
+  <view class="gallery-section">
+    <view class="gallery-waterfall">
+      <!-- 左列 -->
+      <view class="gallery-column">
+        <view 
+          class="gallery-item {{item.loaded ? 'loaded' : ''}}" 
+          wx:for="{{leftColumn}}" 
+          wx:key="id"
+          bindtap="previewImage"
+          data-url="{{item.image_url}}"
+        >
+          <image 
+            class="gallery-image" 
+            src="{{item.image_url}}" 
+            mode="widthFix" 
+            lazy-load
+            bindload="onImageLoad"
+            data-id="{{item.id}}"
+          />
+          <view class="gallery-overlay">
+            <text class="gallery-title">{{item.title}}</text>
+            <text class="gallery-desc" wx:if="{{item.description}}">{{item.description}}</text>
+          </view>
+        </view>
+      </view>
+      
+      <!-- 右列 -->
+      <view class="gallery-column">
+        <view 
+          class="gallery-item {{item.loaded ? 'loaded' : ''}}" 
+          wx:for="{{rightColumn}}" 
+          wx:key="id"
+          bindtap="previewImage"
+          data-url="{{item.image_url}}"
+        >
+          <image 
+            class="gallery-image" 
+            src="{{item.image_url}}" 
+            mode="widthFix" 
+            lazy-load
+            bindload="onImageLoad"
+            data-id="{{item.id}}"
+          />
+          <view class="gallery-overlay">
+            <text class="gallery-title">{{item.title}}</text>
+            <text class="gallery-desc" wx:if="{{item.description}}">{{item.description}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 加载状态 -->
+  <view class="loading-more" wx:if="{{loading}}">
+    <t-loading theme="dots" size="40rpx" text="加载中..." t-class-text="loading-text" />
+  </view>
+  
+  <!-- 没有更多 -->
+  <view class="no-more" wx:if="{{!hasMore && galleryList.length > 0}}">
+    <t-divider content="已经到底了" t-class-content="divider-text" />
+  </view>
+  
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{!loading && galleryList.length === 0}}">
+    <t-empty icon="photo" description="暂无展示内容" />
+  </view>
+  
+  <!-- 底部安全区域 -->
+  <view class="safe-area-bottom"></view>
+</view>

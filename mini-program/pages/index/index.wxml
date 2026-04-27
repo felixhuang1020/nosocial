@@ -1,0 +1,189 @@
+<view class="container">
+  <!-- 轮播图 -->
+  <view class="banner-section">
+    <t-swiper 
+      image-props="{{swiperImageProps}}"
+      list="{{banners}}"
+      navigation="{{ { type: 'dots-bar' } }}"
+      autoplay="{{true}}"
+      interval="{{5000}}"
+      duration="{{500}}"
+      circular="{{true}}"
+      bind:click="onBannerClick"
+      class="banner-swiper"
+    />
+  </view>
+  
+  <!-- 功能入口 2x2 网格 -->
+  <view class="features-section">
+    <view class="features-grid">
+      <view class="feature-card" bindtap="navigateToShareholder">
+        <view class="feature-icon-wrapper gold-gradient">
+          <t-icon name="wallet" size="48rpx" color="#FFFFFF" />
+        </view>
+        <view class="feature-content">
+          <text class="feature-title">共享股东</text>
+          <text class="feature-subtitle">分享得佣金</text>
+        </view>
+        <view class="feature-arrow">
+          <t-icon name="chevron-right" size="32rpx" color="#6B7280" />
+        </view>
+      </view>
+      
+      <view class="feature-card" bindtap="navigateToBirthday">
+        <view class="feature-icon-wrapper rose-gradient">
+          <t-icon name="gift" size="48rpx" color="#FFFFFF" />
+        </view>
+        <view class="feature-content">
+          <text class="feature-title">生日有礼</text>
+          <text class="feature-subtitle">股东专属福利</text>
+        </view>
+        <view class="feature-arrow">
+          <t-icon name="chevron-right" size="32rpx" color="#6B7280" />
+        </view>
+      </view>
+      
+      <view class="feature-card" bindtap="navigateToTarot">
+        <view class="feature-icon-wrapper purple-gradient">
+          <t-icon name="star" size="48rpx" color="#FFFFFF" />
+        </view>
+        <view class="feature-content">
+          <text class="feature-title">酒水塔罗</text>
+          <text class="feature-subtitle">抽牌选酒</text>
+        </view>
+        <view class="feature-arrow">
+          <t-icon name="chevron-right" size="32rpx" color="#6B7280" />
+        </view>
+      </view>
+      
+      <view class="feature-card" bindtap="navigateToReview">
+        <view class="feature-icon-wrapper blue-gradient">
+          <t-icon name="edit-1" size="48rpx" color="#FFFFFF" />
+        </view>
+        <view class="feature-content">
+          <text class="feature-title">离店点评</text>
+          <text class="feature-subtitle">点评返优惠券</text>
+        </view>
+        <view class="feature-arrow">
+          <t-icon name="chevron-right" size="32rpx" color="#6B7280" />
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 金色分割线 -->
+  <view class="gold-divider"></view>
+  
+  <!-- 今日推荐 -->
+  <view class="recommend-section">
+    <view class="section-header">
+      <view class="section-title-wrapper">
+        <view class="title-line"></view>
+        <text class="section-title-text">今日推荐</text>
+      </view>
+      <view class="section-more" bindtap="navigateToMenu">
+        <text>查看全部</text>
+        <t-icon name="chevron-right" size="24rpx" color="#7C9A92" />
+      </view>
+    </view>
+    
+    <block wx:if="{{recommendDrink}}">
+      <view class="recommend-card" bindtap="navigateToDrinkDetail" data-id="{{recommendDrink.id}}">
+        <image class="recommend-image" src="{{recommendDrink.image_url}}" mode="aspectFill" lazy-load />
+        <view class="recommend-overlay">
+          <view class="recommend-badge">
+            <t-icon name="heart-filled" size="24rpx" color="#ff4d4f" />
+            <text>店长推荐</text>
+          </view>
+          <view class="recommend-info">
+            <text class="recommend-name">{{recommendDrink.name}}</text>
+            <text class="recommend-enname">{{recommendDrink.english_name}}</text>
+            <view class="recommend-meta">
+              <text class="recommend-alcohol">{{recommendDrink.alcohol}}% VOL</text>
+              <text class="recommend-dot">·</text>
+              <text class="recommend-volume">{{recommendDrink.volume}}</text>
+            </view>
+            <view class="recommend-price-row">
+              <text class="recommend-price"><text class="price-symbol">¥</text>{{recommendDrink.price}}</text>
+              <view class="recommend-btn">
+                <text>立即品尝</text>
+                <t-icon name="arrow-right" size="24rpx" color="#FFFFFF" />
+              </view>
+            </view>
+          </view>
+        </view>
+      </view>
+    </block>
+    <block wx:else>
+      <view class="recommend-empty">
+        <t-empty icon="wine" description="暂无推荐酒水" />
+      </view>
+    </block>
+  </view>
+  
+  <!-- 金色分割线 -->
+  <view class="gold-divider"></view>
+  
+  <!-- 店铺信息 -->
+  <view class="shop-section">
+    <view class="section-header">
+      <view class="section-title-wrapper">
+        <view class="title-line"></view>
+        <text class="section-title-text">店铺信息</text>
+      </view>
+    </view>
+    
+    <view class="shop-card">
+      <view class="shop-name">NoSocial 酒吧</view>
+      <view class="shop-desc">没有社交，只有美酒</view>
+      
+      <view class="shop-info-list">
+        <view class="shop-info-item" bindtap="openAddress">
+          <view class="info-icon">
+            <t-icon name="location" size="36rpx" color="#7C9A92" />
+          </view>
+          <view class="info-content">
+            <text class="info-label">地址</text>
+            <text class="info-value">{{shopInfo.address}}</text>
+          </view>
+          <t-icon name="chevron-right" size="28rpx" color="#6B7280" />
+        </view>
+        
+        <view class="shop-info-item" bindtap="makePhoneCall">
+          <view class="info-icon">
+            <t-icon name="call" size="36rpx" color="#7C9A92" />
+          </view>
+          <view class="info-content">
+            <text class="info-label">电话</text>
+            <text class="info-value">{{shopInfo.phone}}</text>
+          </view>
+          <t-icon name="chevron-right" size="28rpx" color="#6B7280" />
+        </view>
+        
+        <view class="shop-info-item">
+          <view class="info-icon">
+            <t-icon name="time" size="36rpx" color="#7C9A92" />
+          </view>
+          <view class="info-content">
+            <text class="info-label">营业时间</text>
+            <text class="info-value">{{shopInfo.business_hours}}</text>
+          </view>
+        </view>
+        
+        <view class="shop-info-item">
+          <view class="info-icon">
+            <t-icon name="wifi" size="36rpx" color="#7C9A92" />
+          </view>
+          <view class="info-content">
+            <text class="info-label">WiFi</text>
+            <text class="info-value">{{shopInfo.wifi}}</text>
+          </view>
+          <view class="copy-btn" bindtap="copyWifi">复制</view>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 底部安全区域 -->
+  <view class="safe-area-bottom" style="height: 40rpx;"></view>
+</view>

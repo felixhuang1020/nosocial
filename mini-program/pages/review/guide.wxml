@@ -1,0 +1,91 @@
+<view class="container">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <t-icon name="edit-1" size="64rpx" color="#7C9A92" />
+    <text class="page-title">离店点评</text>
+    <text class="page-subtitle">好评返20元优惠券</text>
+  </view>
+  
+  <!-- 步骤说明 -->
+  <view class="steps-section">
+    <view class="step-item">
+      <view class="step-number">1</view>
+      <view class="step-content">
+        <text class="step-title">打开大众点评</text>
+        <text class="step-desc">点击按钮跳转大众点评APP或网页版</text>
+      </view>
+    </view>
+    
+    <view class="step-connector"></view>
+    
+    <view class="step-item">
+      <view class="step-number">2</view>
+      <view class="step-content">
+        <text class="step-title">搜索 NoSocial</text>
+        <text class="step-desc">搜索并找到我们的店铺页面</text>
+      </view>
+    </view>
+    
+    <view class="step-connector"></view>
+    
+    <view class="step-item">
+      <view class="step-number">3</view>
+      <view class="step-content">
+        <text class="step-title">写5星好评</text>
+        <text class="step-desc">发表真实的好评体验，附带图片更佳</text>
+      </view>
+    </view>
+    
+    <view class="step-connector"></view>
+    
+    <view class="step-item">
+      <view class="step-number">4</view>
+      <view class="step-content">
+        <text class="step-title">截图保存</text>
+        <text class="step-desc">保存你的评价截图</text>
+      </view>
+    </view>
+    
+    <view class="step-connector"></view>
+    
+    <view class="step-item">
+      <view class="step-number">5</view>
+      <view class="step-content">
+        <text class="step-title">返回小程序</text>
+        <text class="step-desc">上传截图，审核通过后自动发放优惠券</text>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 奖励说明 -->
+  <view class="reward-section">
+    <view class="reward-card">
+      <t-icon name="coupon" size="48rpx" color="#7C9A92" />
+      <view class="reward-content">
+        <text class="reward-title">点评奖励</text>
+        <text class="reward-desc">审核通过后将获得 20元无门槛优惠券</text>
+        <text class="reward-note">有效期30天</text>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 底部按钮 -->
+  <view class="bottom-bar">
+    <t-button 
+      theme="primary" 
+      class="btn-gold goto-btn" 
+      size="large"
+      bindtap="goToDianping"
+    >
+      <t-icon name="jump" size="32rpx" color="#FFFFFF" />
+      <text style="margin-left: 12rpx;">去大众点评点评</text>
+    </t-button>
+    <view class="already-reviewed" bindtap="goToSubmit">
+      <text>已经点评过了？</text>
+      <text class="upload-link">上传截图</text>
+    </view>
+  </view>
+  
+  <!-- 底部安全区域 -->
+  <view class="safe-area-bottom" style="height: calc(200rpx + env(safe-area-inset-bottom));"></view>
+</view>

@@ -1,0 +1,167 @@
+/* ============================================
+   我的团队页样式
+   ============================================ */
+
+/* 统计卡片 */
+.stats-section {
+  padding: 20rpx 30rpx;
+}
+
+.stats-card {
+  background: linear-gradient(135deg, rgba(124, 154, 146, 0.2), rgba(138, 43, 226, 0.15));
+  border-radius: 24rpx;
+  padding: 30rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  border: 1rpx solid rgba(124, 154, 146, 0.3);
+}
+
+.stats-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.stats-value {
+  font-size: 40rpx;
+  font-weight: 700;
+  color: #7C9A92;
+  margin-bottom: 8rpx;
+}
+
+.stats-label {
+  font-size: 24rpx;
+  color: #9CA3AF;
+}
+
+.stats-divider {
+  width: 2rpx;
+  height: 50rpx;
+  background: rgba(124, 154, 146, 0.3);
+}
+
+/* 团队列表 */
+.team-section {
+  padding: 20rpx 30rpx;
+  flex: 1;
+}
+
+.team-header {
+  margin-bottom: 20rpx;
+}
+
+.team-title-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.title-line {
+  width: 6rpx;
+  height: 32rpx;
+  background: linear-gradient(180deg, #7C9A92, #5F8578);
+  border-radius: 3rpx;
+  margin-right: 14rpx;
+}
+
+.team-title-wrapper text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #7C9A92;
+}
+
+.team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+}
+
+.team-item {
+  display: flex;
+  align-items: center;
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  padding: 20rpx 24rpx;
+  border: 1rpx solid rgba(124, 154, 146, 0.08);
+}
+
+.member-avatar {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  margin-right: 20rpx;
+  background: #F5F6F8;
+}
+
+.member-avatar.default-avatar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.member-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.member-name {
+  font-size: 28rpx;
+  color: #1A1D23;
+  margin-bottom: 4rpx;
+}
+
+.member-date {
+  font-size: 22rpx;
+  color: #6B7280;
+}
+
+.member-orders {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+}
+
+.orders-count {
+  font-size: 24rpx;
+  color: #7C9A92;
+  margin-bottom: 4rpx;
+}
+
+.orders-amount {
+  font-size: 22rpx;
+  color: #6B7280;
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 100rpx 60rpx;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #6B7280;
+  margin-top: 20rpx;
+  margin-bottom: 12rpx;
+}
+
+.empty-tip {
+  font-size: 24rpx;
+  color: #6B7280;
+  text-align: center;
+}
+
+/* 邀请按钮 */
+.invite-action {
+  padding: 20rpx 30rpx 40rpx;
+}
+
+.invite-btn {
+  width: 100%;
+}

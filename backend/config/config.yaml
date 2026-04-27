@@ -1,0 +1,59 @@
+app:
+  name: "NoSocial"
+  version: "1.0.0"
+  mode: "debug" # debug/release
+  port: 8080
+
+postgresql:
+  host: ""               # 从环境变量 NOSOCIAL_POSTGRESQL_HOST 读取
+  port: 5432             # 可被 NOSOCIAL_POSTGRESQL_PORT 覆盖
+  user: ""               # 从环境变量 NOSOCIAL_POSTGRESQL_USER 读取
+  password: ""           # 从环境变量 NOSOCIAL_POSTGRESQL_PASSWORD 读取
+  dbname: ""             # 从环境变量 NOSOCIAL_POSTGRESQL_DBNAME 读取
+  sslmode: "disable"
+  timezone: "Asia/Shanghai"
+  max_idle_conns: 10
+  max_open_conns: 100
+  conn_max_lifetime: 3600
+
+redis:
+  host: ""               # 从环境变量 NOSOCIAL_REDIS_HOST 读取
+  port: 6379             # 可被 NOSOCIAL_REDIS_PORT 覆盖
+  password: ""           # 从环境变量 NOSOCIAL_REDIS_PASSWORD 读取
+  db: 0                  # 可被 NOSOCIAL_REDIS_DB 覆盖
+
+jwt:
+  wx_secret: ""          # 从环境变量 NOSOCIAL_JWT_WX_SECRET 读取
+  wx_expire: 7200
+  admin_secret: ""      # 从环境变量 NOSOCIAL_JWT_ADMIN_SECRET 读取
+  admin_expire: 86400
+
+oss:
+  endpoint: "oss-cn-beijing.aliyuncs.com"
+  bucket: "nosocial"
+  access_key_id: ""     # 从环境变量 NOSOCIAL_OSS_ACCESS_KEY_ID 读取
+  access_key_secret: "" # 从环境变量 NOSOCIAL_OSS_ACCESS_KEY_SECRET 读取
+  sts_role_arn: "acs:ram::1588535215450132:user/nosocial"
+  region: "cn-beijing"
+
+wx:
+  appid: ""             # 从环境变量 NOSOCIAL_WX_APPID 读取
+  secret: ""            # 从环境变量 NOSOCIAL_WX_SECRET 读取
+  mch_id: "mock_mch_id"
+  api_v3_key: ""        # 从环境变量 NOSOCIAL_WX_API_V3_KEY 读取
+
+business:
+  shareholder_fee: 99.00
+  commission_rate: 0.10
+  free_drink_id: 1
+  review_coupon_amount: 20.00
+  review_coupon_min_order: 0.00
+  review_coupon_valid_days: 30
+
+log:
+  level: "info"
+  filename: "logs/nosocial.log"
+  max_size: 100
+  max_backups: 10
+  max_age: 30
+  compress: true

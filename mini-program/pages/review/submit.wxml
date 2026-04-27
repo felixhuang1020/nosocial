@@ -1,0 +1,60 @@
+<view class="container">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <text class="page-title">上传点评截图</text>
+    <text class="page-subtitle">审核通过后将自动发放优惠券</text>
+  </view>
+  
+  <!-- 截图上传 -->
+  <view class="upload-section">
+    <view class="upload-label">点评截图 <text class="required">*</text></view>
+    <view class="image-grid">
+      <view class="image-item" wx:for="{{screenshots}}" wx:key="index">
+        <image class="grid-image" src="{{item.url || item.tempFilePath}}" mode="aspectFill" bindtap="previewImage" data-index="{{index}}" />
+        <view class="image-mask" wx:if="{{item.uploading}}">
+          <t-loading theme="circular" size="32rpx" />
+        </view>
+        <view class="delete-btn" bindtap="deleteImage" data-index="{{index}}">
+          <t-icon name="close" size="24rpx" color="#fff" />
+        </view>
+      </view>
+      <view class="add-image" bindtap="chooseImages" wx:if="{{screenshots.length < 9}}">
+        <t-icon name="add" size="48rpx" color="#6B7280" />
+        <text class="add-text">添加图片</text>
+      </view>
+    </view>
+    <text class="upload-tip">最多9张，支持 JPG、PNG 格式</text>
+  </view>
+  
+  <!-- 评价内容（可选） -->
+  <view class="content-section">
+    <view class="content-label">评价内容（可选）</view>
+    <t-textarea
+      value="{{reviewContent}}"
+      placeholder="可以简单描述你的评价内容..."
+      placeholder-class="textarea-placeholder"
+      maxlength="200"
+      indicator
+      bind:change="onContentChange"
+      t-class="review-textarea"
+    />
+  </view>
+  
+  <!-- 提交按钮 -->
+  <view class="submit-section">
+    <t-button 
+      theme="primary" 
+      class="btn-gold submit-btn" 
+      size="large"
+      bindtap="submitReview"
+      loading="{{submitting}}"
+      disabled="{{!screenshot}}"
+    >
+      提交审核
+    </t-button>
+    <text class="submit-note">提交后将在1-2个工作日内审核</text>
+  </view>
+  
+  <!-- 底部安全区域 -->
+  <view class="safe-area-bottom"></view>
+</view>

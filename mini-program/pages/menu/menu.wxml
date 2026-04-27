@@ -1,0 +1,96 @@
+<view class="container">
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <view class="search-input-wrapper" bindtap="showSearch">
+      <t-icon name="search" size="32rpx" color="#6B7280" />
+      <text class="search-placeholder">搜索酒水名称...</text>
+    </view>
+  </view>
+  
+  <!-- 分类标签 -->
+  <view class="category-section">
+    <scroll-view class="category-scroll" scroll-x scroll-with-animation enhanced show-scrollbar="{{false}}">
+      <view 
+        class="category-item {{currentCategory === item.id ? 'active' : ''}}" 
+        wx:for="{{categories}}" 
+        wx:key="id"
+        bindtap="switchCategory"
+        data-id="{{item.id}}"
+      >
+        <text class="category-name">{{item.name}}</text>
+        <view class="category-indicator" wx:if="{{currentCategory === item.id}}"></view>
+      </view>
+    </scroll-view>
+  </view>
+  
+  <!-- 酒水列表 -->
+  <view class="drink-list">
+    <view 
+      class="drink-card" 
+      wx:for="{{drinkList}}" 
+      wx:key="id"
+      bindtap="navigateToDetail"
+      data-id="{{item.id}}"
+    >
+      <view class="drink-image-wrapper">
+        <image class="drink-image" src="{{item.image_url}}" mode="aspectFill" lazy-load />
+        <view class="drink-badges">
+          <view class="badge-recommend" wx:if="{{item.is_recommended}}">
+            <t-icon name="heart-filled" size="20rpx" color="#fff" />
+            <text>推荐</text>
+          </view>
+          <view class="badge-free" wx:if="{{item.is_free_drink}}">
+            <text>股东免费</text>
+          </view>
+        </view>
+      </view>
+      
+      <view class="drink-info">
+        <view class="drink-header">
+          <view class="drink-name-wrapper">
+            <text class="drink-name">{{item.name}}</text>
+            <text class="drink-enname">{{item.english_name}}</text>
+          </view>
+          <view class="drink-price">
+            <text class="price-symbol">¥</text>
+            <text class="price-value">{{item.price}}</text>
+          </view>
+        </view>
+        
+        <view class="drink-meta">
+          <text class="meta-item" wx:if="{{item.alcohol}}">{{item.alcohol}}% VOL</text>
+          <text class="meta-dot" wx:if="{{item.alcohol && item.volume}}">·</text>
+          <text class="meta-item" wx:if="{{item.volume}}">{{item.volume}}</text>
+        </view>
+        
+        <text class="drink-desc" wx:if="{{item.description}}">{{item.description}}</text>
+        
+        <view class="drink-ingredients" wx:if="{{item.ingredients}}">
+          <text class="ingredient-tag" wx:for="{{item.ingredientList}}" wx:for-item="ing" wx:key="*this">{{ing}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 加载状态 -->
+  <view class="loading-more" wx:if="{{loading}}">
+    <t-loading theme="dots" size="40rpx" text="加载中..." t-class-text="loading-text" />
+  </view>
+  
+  <!-- 没有更多 -->
+  <view class="no-more" wx:if="{{!hasMore && drinkList.length > 0}}">
+    <t-divider content="已经到底了" t-class-content="divider-text" />
+  </view>
+  
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{!loading && drinkList.length === 0}}">
+    <t-empty icon="wine" description="该分类暂无酒水" t-class-description="empty-desc">
+      <t-button slot="action" theme="primary" variant="outline" size="small" bindtap="resetCategory">
+        查看全部
+      </t-button>
+    </t-empty>
+  </view>
+  
+  <!-- 底部安全区域 -->
+  <view class="safe-area-bottom"></view>
+</view>

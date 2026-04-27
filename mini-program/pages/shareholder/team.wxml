@@ -1,0 +1,69 @@
+<view class="container">
+  <!-- 统计卡片 -->
+  <view class="stats-section">
+    <view class="stats-card">
+      <view class="stats-item">
+        <text class="stats-value">{{totalMembers}}</text>
+        <text class="stats-label">团队人数</text>
+      </view>
+      <view class="stats-divider"></view>
+      <view class="stats-item">
+        <text class="stats-value">{{activeMembers}}</text>
+        <text class="stats-label">活跃人数</text>
+      </view>
+      <view class="stats-divider"></view>
+      <view class="stats-item">
+        <text class="stats-value">¥{{totalCommission}}</text>
+        <text class="stats-label">累计佣金</text>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 团队列表 -->
+  <view class="team-section">
+    <view class="team-header">
+      <view class="team-title-wrapper">
+        <view class="title-line"></view>
+        <text>我的团队</text>
+      </view>
+    </view>
+    
+    <view class="team-list">
+      <view class="team-item" wx:for="{{teamList}}" wx:key="id">
+        <image class="member-avatar" src="{{item.avatar}}" mode="aspectFill" wx:if="{{item.avatar}}" />
+        <view class="member-avatar default-avatar" wx:if="{{!item.avatar}}">
+          <t-icon name="user-circle" size="48rpx" color="#6B7280" />
+        </view>
+        <view class="member-info">
+          <text class="member-name">{{item.nickname || '匿名用户'}}</text>
+          <text class="member-date">{{item.created_at}}</text>
+        </view>
+        <view class="member-orders">
+          <text class="orders-amount" wx:if="{{item.total_earning}}">收益 ¥{{item.total_earning}}</text>
+          <text class="orders-amount" wx:if="{{!item.total_earning}}">新成员</text>
+        </view>
+      </view>
+    </view>
+    
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{!loading && teamList.length === 0}}">
+      <t-empty icon="user-group" description="暂无团队成员">
+        <text slot="action" class="empty-tip">分享邀请码给好友，好友注册后自动成为你的团队成员</text>
+      </t-empty>
+    </view>
+  </view>
+  
+  <!-- 邀请按钮 -->
+  <view class="invite-action">
+    <t-button 
+      theme="primary" 
+      class="btn-gold invite-btn" 
+      bindtap="shareInvite"
+    >
+      邀请好友加入
+    </t-button>
+  </view>
+  
+  <!-- 底部安全区域 -->
+  <view class="safe-area-bottom"></view>
+</view>

@@ -1,0 +1,107 @@
+<view class="container">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <text class="page-title">酒水塔罗</text>
+    <text class="page-subtitle">让塔罗指引你今夜的美酒</text>
+  </view>
+  
+  <!-- 问题输入 -->
+  <view class="question-section" wx:if="{{step === 'question'}}">
+    <view class="question-card">
+      <t-icon name="help-circle" size="48rpx" color="#7C9A92" />
+      <text class="question-label">今夜你想问什么？</text>
+      <input 
+        class="question-input" 
+        placeholder="例如：今天适合喝什么？（可选）"
+        placeholder-class="input-placeholder"
+        value="{{question}}"
+        bindinput="onQuestionInput"
+        maxlength="50"
+      />
+      <text class="question-hint">留空将使用默认问题</text>
+    </view>
+    
+    <t-button 
+      theme="primary" 
+      class="btn-gold start-btn" 
+      size="large"
+      bindtap="startDivination"
+    >
+      <t-icon name="magic" size="36rpx" color="#FFFFFF" />
+      <text style="margin-left: 12rpx;">开始占卜</text>
+    </t-button>
+  </view>
+  
+  <!-- 洗牌动画 -->
+  <view class="shuffle-section" wx:if="{{step === 'shuffle'}}">
+    <view class="shuffle-container">
+      <view class="deck-wrapper">
+        <view class="card-back {{shuffling ? 'shuffling' : ''}}" wx:for="{{deckCards}}" wx:key="index" style="animation-delay: {{index * 50}}ms; z-index: {{deckCards.length - index}};">
+          <view class="card-pattern">
+            <view class="pattern-star">✦</view>
+          </view>
+        </view>
+      </view>
+      <text class="shuffle-text">{{shuffleText}}</text>
+    </view>
+    
+    <t-button 
+      theme="primary" 
+      class="btn-gold draw-btn {{canDraw ? 'pulse' : 'disabled'}}" 
+      size="large"
+      bindtap="drawCard"
+      disabled="{{!canDraw}}"
+    >
+      <text>{{canDraw ? '点击抽牌' : '洗牌中...'}}</text>
+    </t-button>
+  </view>
+  
+  <!-- 抽牌动画 -->
+  <view class="draw-section" wx:if="{{step === 'draw'}}">
+    <view class="draw-container">
+      <view class="card-slot">
+        <view class="card-reveal {{revealing ? 'revealed' : ''}} {{isReversed ? 'reversed' : ''}}">
+          <!-- 牌背 -->
+          <view class="card-face card-back-face">
+            <view class="card-pattern-large">
+              <view class="pattern-star-large">✦</view>
+              <view class="pattern-text">NoSocial</view>
+            </view>
+          </view>
+          <!-- 牌面 -->
+          <view class="card-face card-front-face">
+            <image class="card-image" src="{{drawnCard.image_url}}" mode="aspectFit" />
+            <view class="card-info-overlay">
+              <text class="card-position">{{isReversed ? '逆位' : '正位'}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+      
+      <view class="card-meaning {{revealing ? 'show' : ''}}">
+        <text class="card-name">{{drawnCard.name}}</text>
+        <text class="card-keyword" wx:if="{{drawnCard.meaning}}">{{drawnCard.meaning}}</text>
+      </view>
+    </view>
+    
+    <t-button 
+      theme="primary" 
+      class="btn-gold result-btn" 
+      size="large"
+      bindtap="viewResult"
+      wx:if="{{revealing}}"
+    >
+      查看推荐酒水
+    </t-button>
+  </view>
+  
+  <!-- 历史记录入口 -->
+  <view class="history-entry" bindtap="navigateToHistory">
+    <t-icon name="history" size="32rpx" color="#6B7280" />
+    <text>查看历史记录</text>
+    <t-icon name="chevron-right" size="28rpx" color="#6B7280" />
+  </view>
+  
+  <!-- 底部安全区域 -->
+  <view class="safe-area-bottom"></view>
+</view>

@@ -1,0 +1,68 @@
+<view class="container">
+  <!-- 页面标题 -->
+  <view class="page-header">
+    <text class="page-title">占卜历史</text>
+    <text class="page-subtitle">回顾你的塔罗指引</text>
+  </view>
+  
+  <!-- 历史列表 -->
+  <view class="history-list">
+    <view 
+      class="history-card" 
+      wx:for="{{historyList}}" 
+      wx:key="id"
+      bindtap="viewDetail"
+      data-id="{{item.id}}"
+    >
+      <view class="card-display {{item.is_reversed ? 'reversed' : ''}}">
+        <view class="card-placeholder">
+          <t-icon name="star" size="48rpx" color="#7C9A92" />
+          <text class="card-no">#{{item.card_no !== undefined ? item.card_no + 1 : '?'}}</text>
+        </view>
+        <view class="card-position-badge {{item.is_reversed ? 'badge-reversed' : 'badge-upright'}}">
+          {{item.is_reversed ? '逆' : '正'}}
+        </view>
+      </view>
+      
+      <view class="history-content">
+        <view class="history-header">
+          <text class="card-name">{{item.question || '塔罗占卜'}}</text>
+          <text class="history-date">{{item.displayDate}}</text>
+        </view>
+        
+        <text class="card-keywords" wx:if="{{item.recommended_reason}}">{{item.recommended_reason}}</text>
+        
+        <view class="recommend-mini" wx:if="{{item.recommended_drink_id}}">
+          <t-icon name="wine" size="24rpx" color="#7C9A92" />
+          <text>推荐酒水 #{{item.recommended_drink_id}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+  
+  <!-- 加载更多 -->
+  <view class="loading-more" wx:if="{{loading}}">
+    <t-loading theme="dots" size="40rpx" text="加载中..." t-class-text="loading-text" />
+  </view>
+  
+  <!-- 没有更多 -->
+  <view class="no-more" wx:if="{{!hasMore && historyList.length > 0}}">
+    <t-divider content="已经到底了" t-class-content="divider-text" />
+  </view>
+  
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{!loading && historyList.length === 0}}">
+    <t-icon name="star" size="120rpx" color="#6B7280" />
+    <text class="empty-text">暂无占卜记录</text>
+    <t-button 
+      theme="primary" 
+      class="btn-gold empty-btn" 
+      bindtap="goDivine"
+    >
+      开始第一次占卜
+    </t-button>
+  </view>
+  
+  <!-- 底部安全区域 -->
+  <view class="safe-area-bottom"></view>
+</view>

@@ -1,0 +1,64 @@
+{
+  "description": "NoSocial 酒吧小程序",
+  "packOptions": {
+    "ignore": [],
+    "include": []
+  },
+  "setting": {
+    "bundle": false,
+    "userConfirmedBundleSwitch": false,
+    "urlCheck": true,
+    "scopeDataCheck": false,
+    "coverView": true,
+    "es6": true,
+    "postcss": true,
+    "compileHotReLoad": true,
+    "lazyloadPlaceholderEnable": false,
+    "preloadBackgroundData": false,
+    "minified": true,
+    "autoAudits": false,
+    "newFeature": false,
+    "uglifyFileName": false,
+    "uploadWithSourceMap": true,
+    "useIsolateContext": true,
+    "nodeModules": true,
+    "enhance": true,
+    "useMultiFrameRuntime": true,
+    "useApiHook": true,
+    "useApiHostProcess": true,
+    "showShadowRootInWatermark": true,
+    "enableEngineNative": false,
+    "packNpmManually": true,
+    "packNpmRelationList": [
+      {
+        "packageJsonPath": "./package.json",
+        "miniprogramNpmDistDir": "./"
+      }
+    ],
+    "ignoreUploadUnusedFiles": true,
+    "compileWorklet": false,
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "localPlugins": false,
+    "disableUseStrict": false,
+    "useCompilerPlugins": false,
+    "condition": false,
+    "swc": false,
+    "disableSWC": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "compileType": "miniprogram",
+  "libVersion": "3.4.0",
+  "appid": "wx0900c806abec0008",
+  "projectname": "NoSocial",
+  "condition": {},
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  },
+  "simulatorPluginLibVersion": {}
+}

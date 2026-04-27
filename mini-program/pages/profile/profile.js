@@ -1,0 +1,205 @@
+import { createStoreBindings } from 'mobx-miniprogram-bindings';
+import { appStore } from '../../stores/app';
+import { get, post, put } from '../../utils/request';
+
+Page({
+  data: {
+    loginLoading: false,
+    teamCount: 0
+  },
+
+  storeBindings: null,
+
+  onLoad() {
+    this.storeBindings = createStoreBindings(this, {
+      store: appStore,
+      fields: ['userInfo', 'isLogin', 'isShareholder', 'nickname', 'avatar', 'birthday', 'inviteCode', 'balance', 'totalEarning'],
+      actions: ['setToken', 'setUserInfo', 'clearUserInfo']
+    });
+  },
+
+  onShow() {
+    if (this.storeBindings) {
+      this.storeBindings.updateStoreBindings();
+    }
+    
+    if (this.data.isLogin) {
+      this.fetchUserProfile();
+      if (this.data.isShareholder) {
+        this.fetchTeamCount();
+      }
+    }
+  },
+
+  onReady() {
+    // 页面首次渲染完成
+  },
+
+  onUnload() {
+    if (this.storeBindings) {
+      this.storeBindings.destroyStoreBindings();
+    }
+  },
+
+  // 微信登录
+  handleLogin() {
+    this.setData({ loginLoading: true });
+    
+    const app = getApp();
+    const inviteCode = wx.getStorageSync('invite_code') || '';
+    
+    app.wxLogin(inviteCode).then(data => {
+      wx.showToast({ title: '登录成功', icon: 'success' });
+      this.fetchUserProfile();
+    }).catch(err => {
+      wx.showToast({ title: '登录失败', icon: 'none' });
+    }).finally(() => {
+      this.setData({ loginLoading: false });
+    });
+  },
+
+  // 获取用户资料
+  fetchUserProfile() {
+    get('/wx/user').then(res => {
+      this.setUserInfo(res);
+      if (res.is_shareholder) {
+        this.fetchTeamCount();
+      }
+    }).catch(err => {
+      console.error('获取用户信息失败:', err);
+    });
+  },
+
+  // 获取团队人数
+  fetchTeamCount() {
+    get('/wx/shareholder/team').then(res => {
+      const count = Array.isArray(res) ? res.length : 0;
+      this.setData({ teamCount: count });
+    }).catch(err => {
+      console.log('获取团队人数失败');
+    });
+  },
+
+  // 导航到收益明细
+  navigateToEarnings() {
+    wx.navigateTo({ url: '/pages/shareholder/earnings' });
+  },
+
+  // 导航到团队
+  navigateToTeam() {
+    wx.navigateTo({ url: '/pages/shareholder/team' });
+  },
+
+  // 导航到申请股东
+  navigateToApply() {
+    wx.navigateTo({ url: '/pages/shareholder/apply' });
+  },
+
+  // 导航到订单列表
+  navigateToOrders() {
+    wx.navigateTo({ url: '/pages/order/list' });
+  },
+
+  // 导航到优惠券
+  navigateToCoupons() {
+    wx.navigateTo({ url: '/pages/coupon/list' });
+  },
+
+  // 导航到占卜历史
+  navigateToTarotHistory() {
+    wx.navigateTo({ url: '/pages/tarot/history' });
+  },
+
+  // 分享邀请
+  shareInvite() {
+    wx.showShareMenu({
+      withShareTicket: true,
+      menus: ['shareAppMessage']
+    });
+  },
+
+  // 设置生日
+  setBirthday() {
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    
+    wx.showModal({
+      title: '设置生日',
+      editable: true,
+      placeholderText: '格式: yyyy-MM-DD',
+      content: this.data.birthday || `${currentYear - 25}-01-01`,
+      success: (res) => {
+        if (!res.confirm || !res.content) return;
+        const birthday = res.content.trim();
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(birthday)) {
+          wx.showToast({ title: '日期格式错误', icon: 'none' });
+          return;
+        }
+        this.updateBirthday(birthday);
+      }
+    });
+  },
+
+  // 更新生日
+  updateBirthday(birthday) {
+    put('/wx/user/birthday', { birthday }).then(res => {
+      wx.showToast({ title: '生日设置成功', icon: 'success' });
+      this.fetchUserProfile();
+    }).catch(err => {
+      wx.showToast({ title: '设置失败', icon: 'none' });
+    });
+  },
+
+  // 联系客服（corpId 需配置企业微信客服ID，当前回退到显示固定电话）
+  contactService() {
+    wx.openCustomerServiceChat({
+      extInfo: { url: '' },
+      corpId: '',
+      success: () => {},
+      fail: () => {
+        wx.showModal({
+          title: '联系客服',
+          content: '客服电话: 010-8888-6666\n工作时间: 18:00-04:00',
+          showCancel: false,
+          confirmColor: '#7C9A92'
+        });
+      }
+    });
+  },
+
+  // 关于我们
+  aboutUs() {
+    wx.showModal({
+      title: '关于 NoSocial',
+      content: 'NoSocial 酒吧小程序\n版本: 1.0.0\n\n没有社交，只有美酒。',
+      showCancel: false,
+      confirmColor: '#7C9A92'
+    });
+  },
+
+  // 退出登录
+  logout() {
+    wx.showModal({
+      title: '确认退出',
+      content: '确定要退出登录吗？',
+      confirmColor: '#ff4d4f',
+      success: (res) => {
+        if (res.confirm) {
+          this.clearUserInfo();
+          wx.showToast({ title: '已退出登录', icon: 'success' });
+        }
+      }
+    });
+  },
+
+  // 分享
+  onShareAppMessage() {
+    const inviteCode = this.data.inviteCode || '';
+    return {
+      title: 'NoSocial 酒吧 - 没有社交，只有美酒',
+      path: `/pages/index/index?invite_code=${inviteCode}`,
+      imageUrl: ''
+    };
+  }
+});

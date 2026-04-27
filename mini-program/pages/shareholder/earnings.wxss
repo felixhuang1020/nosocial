@@ -1,0 +1,205 @@
+/* ============================================
+   收益明细页样式
+   ============================================ */
+
+/* 收益概览 */
+.overview-section {
+  padding: 20rpx 30rpx;
+}
+
+.overview-card {
+  background: linear-gradient(135deg, rgba(124, 154, 146, 0.2), rgba(138, 43, 226, 0.15));
+  border-radius: 24rpx;
+  padding: 40rpx;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  border: 1rpx solid rgba(124, 154, 146, 0.3);
+}
+
+.overview-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex: 1;
+}
+
+.overview-value {
+  font-size: 44rpx;
+  font-weight: 700;
+  color: #7C9A92;
+  margin-bottom: 8rpx;
+}
+
+.overview-label {
+  font-size: 24rpx;
+  color: #9CA3AF;
+}
+
+.overview-divider {
+  width: 2rpx;
+  height: 60rpx;
+  background: rgba(124, 154, 146, 0.3);
+}
+
+/* 操作按钮 */
+.action-section {
+  padding: 0 30rpx 20rpx;
+  display: flex;
+  gap: 20rpx;
+}
+
+.withdraw-btn {
+  flex: 1;
+}
+
+.share-btn {
+  flex: 1;
+}
+
+/* 邀请码 */
+.invite-section {
+  padding: 0 30rpx 20rpx;
+}
+
+.invite-card {
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 1rpx solid rgba(124, 154, 146, 0.2);
+}
+
+.invite-card:active {
+  border-color: rgba(124, 154, 146, 0.5);
+}
+
+.invite-label {
+  font-size: 24rpx;
+  color: #6B7280;
+  margin-bottom: 12rpx;
+}
+
+.invite-code {
+  font-size: 48rpx;
+  font-weight: 700;
+  color: #7C9A92;
+  letter-spacing: 8rpx;
+  margin-bottom: 8rpx;
+}
+
+.invite-tip {
+  font-size: 22rpx;
+  color: #6B7280;
+}
+
+/* 收益记录 */
+.record-section {
+  padding: 20rpx 30rpx;
+}
+
+.record-header {
+  margin-bottom: 20rpx;
+}
+
+.record-title-wrapper {
+  display: flex;
+  align-items: center;
+}
+
+.title-line {
+  width: 6rpx;
+  height: 32rpx;
+  background: linear-gradient(180deg, #7C9A92, #5F8578);
+  border-radius: 3rpx;
+  margin-right: 14rpx;
+}
+
+.record-title-wrapper text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #7C9A92;
+}
+
+.record-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.record-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  padding: 24rpx 30rpx;
+  border: 1rpx solid rgba(124, 154, 146, 0.08);
+}
+
+.record-info {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+.record-consumer {
+  font-size: 28rpx;
+  color: #1A1D23;
+  margin-bottom: 4rpx;
+}
+
+.record-order {
+  font-size: 24rpx;
+  color: #6B7280;
+  margin-bottom: 4rpx;
+}
+
+.record-date {
+  font-size: 20rpx;
+  color: #6B7280;
+}
+
+.record-amount {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  flex-shrink: 0;
+  margin-left: 20rpx;
+}
+
+.amount-value {
+  font-size: 32rpx;
+  font-weight: 700;
+  color: #52c41a;
+  margin-bottom: 4rpx;
+}
+
+.amount-rate {
+  font-size: 20rpx;
+  color: #6B7280;
+}
+
+/* 空状态 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 100rpx 60rpx;
+}
+
+.empty-text {
+  font-size: 28rpx;
+  color: #6B7280;
+  margin-top: 20rpx;
+  margin-bottom: 12rpx;
+}
+
+.empty-tip {
+  font-size: 24rpx;
+  color: #6B7280;
+  text-align: center;
+}
