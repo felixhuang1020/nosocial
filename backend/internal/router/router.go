@@ -18,6 +18,13 @@ func SetupRouter(app *bootstrap.App) *gin.Engine {
 	}
 
 	r := gin.New()
+	// 信任边界：仅信任显式配置的反向代理 IP/CIDR
+	// 未配置时传 nil，Gin 将不解析任何 X-Forwarded-For，ClientIP() 回落到 RemoteAddr
+	if len(app.Config.App.TrustedProxies) > 0 {
+		_ = r.SetTrustedProxies(app.Config.App.TrustedProxies)
+	} else {
+		_ = r.SetTrustedProxies(nil)
+	}
 	r.Use(middleware.SecurityHeaders())
 	r.Use(middleware.Logger())
 	r.Use(gin.Recovery())
@@ -40,16 +47,17 @@ func SetupRouter(app *bootstrap.App) *gin.Engine {
 	bannerDAO := dao.NewBannerDAO(app.DB)
 	adminDAO := dao.NewAdminUserDAO(app.DB)
 	settingDAO := dao.NewSettingDAO(app.DB)
+	paymentNotifyDAO := dao.NewPaymentNotifyLogDAO(app.DB)
 
 	// 初始化Service
-	userService := service.NewUserService(userDAO)
-	shareholderService := service.NewShareholderService(userDAO, shareholderOrderDAO, commissionDAO, withdrawalDAO, app.DB)
+	userService := service.NewUserService(userDAO, &app.Config.WX)
+	shareholderService := service.NewShareholderService(userDAO, shareholderOrderDAO, commissionDAO, withdrawalDAO, app.WXPay, app.DB)
 	tarotService := service.NewTarotService(tarotCardDAO, tarotReadingDAO, tarotMappingDAO, drinkDAO)
 	drinkService := service.NewDrinkService(drinkDAO, categoryDAO)
-	orderService := service.NewOrderService(orderDAO)
-	reviewService := service.NewReviewService(reviewDAO, couponDAO, userDAO)
-	couponService := service.NewCouponService(couponDAO)
-	birthdayService := service.NewBirthdayService(birthdayDAO, userDAO)
+	orderService := service.NewOrderService(orderDAO, drinkDAO, couponDAO, userDAO, app.WXPay)
+	reviewService := service.NewReviewService(reviewDAO, couponDAO, userDAO, app.DB)
+	couponService := service.NewCouponService(couponDAO, app.DB)
+	birthdayService := service.NewBirthdayService(birthdayDAO, userDAO, app.DB)
 	bannerService := service.NewBannerService(bannerDAO)
 	adminService := service.NewAdminService(adminDAO, userDAO, orderDAO, reviewDAO)
 	uploadService := service.NewUploadService()
@@ -60,6 +68,7 @@ func SetupRouter(app *bootstrap.App) *gin.Engine {
 
 	// 初始化Handler
 	publicHandler := handler.NewPublicHandler(bannerService, drinkService, tarotService, systemService)
+	paymentNotifyHandler := handler.NewPaymentNotifyHandler(app.WXPay, orderService, shareholderService, paymentNotifyDAO, app.Logger)
 	wxUserHandler := wxhandler.NewUserHandler(userService)
 	wxShareholderHandler := wxhandler.NewShareholderHandler(shareholderService)
 	wxTarotHandler := wxhandler.NewTarotHandler(tarotService)
@@ -93,6 +102,9 @@ func SetupRouter(app *bootstrap.App) *gin.Engine {
 		pub.GET("/config", publicHandler.GetConfig)
 		pub.GET("/shop", publicHandler.GetShopInfo)
 	}
+
+	// 微信支付 V3 回调（公开接口，微信服务器调用）
+	api.POST("/payment/wxpay/notify", paymentNotifyHandler.Notify)
 
 	// 微信小程序接口
 	wx := api.Group("/wx")

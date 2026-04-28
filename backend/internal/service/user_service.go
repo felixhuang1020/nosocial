@@ -1,22 +1,26 @@
 package service
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"nosocial/config"
 	"nosocial/internal/dao"
 	"nosocial/internal/model"
 	"nosocial/internal/pkg/jwt"
+	"nosocial/internal/pkg/wx"
+	"time"
 
 	"gorm.io/gorm"
 )
 
 type UserService struct {
 	userDAO *dao.UserDAO
+	wxCfg   *config.WXConfig
 }
 
-func NewUserService(userDAO *dao.UserDAO) *UserService {
-	return &UserService{userDAO: userDAO}
+func NewUserService(userDAO *dao.UserDAO, wxCfg *config.WXConfig) *UserService {
+	return &UserService{userDAO: userDAO, wxCfg: wxCfg}
 }
 
 // WXLoginReq 微信登录请求
@@ -41,8 +45,14 @@ type UserInfo struct {
 }
 
 func (s *UserService) WXLogin(req *WXLoginReq) (*WXLoginResp, error) {
-	// MOCK: 模拟微信登录，code直接作为openid
-	openid := fmt.Sprintf("mock_openid_%s", req.Code)
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	sess, err := wx.JSCode2Session(ctx, s.wxCfg.AppID, s.wxCfg.Secret, req.Code)
+	if err != nil {
+		return nil, fmt.Errorf("invalid wx code")
+	}
+	openid := sess.OpenID
 
 	user, err := s.userDAO.GetByOpenid(openid)
 	if err != nil && !errors.Is(err, gorm.ErrRecordNotFound) {
@@ -113,7 +123,7 @@ func (s *UserService) UpdateUserStatus(userID uint64, status int8) error {
 	return s.userDAO.UpdateStatus(userID, status)
 }
 
-// ClaimFreeDrink 股东领取免费酒水
+// ClaimFreeDrink 股东领取免费酒水（并发安全 CAS）
 func (s *UserService) ClaimFreeDrink(userID uint64) error {
 	user, err := s.userDAO.GetByID(userID)
 	if err != nil {
@@ -125,5 +135,12 @@ func (s *UserService) ClaimFreeDrink(userID uint64) error {
 	if user.FreeDrinkUsed == 1 {
 		return fmt.Errorf("free drink already claimed")
 	}
-	return s.userDAO.UpdateFreeDrinkUsed(userID, 1)
+	affected, err := s.userDAO.ClaimFreeDrinkCAS(userID)
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return fmt.Errorf("free drink already claimed")
+	}
+	return nil
 }

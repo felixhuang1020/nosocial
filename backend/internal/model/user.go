@@ -41,6 +41,8 @@ type ShareholderOrder struct {
 	PayStatus     int8       `gorm:"type:smallint;not null;default:0" json:"pay_status"`
 	PayTime       *time.Time `gorm:"type:timestamptz" json:"pay_time,omitempty"`
 	TransactionID *string    `gorm:"type:varchar(64)" json:"transaction_id,omitempty"`
+	PrepayID      *string    `gorm:"type:varchar(64)" json:"prepay_id,omitempty"`
+	NotifyRaw     *string    `gorm:"type:jsonb" json:"notify_raw,omitempty"`
 	CreatedAt     time.Time  `gorm:"autoCreateTime" json:"created_at"`
 }
 
@@ -53,8 +55,8 @@ type CommissionRecord struct {
 	ID               uint64     `gorm:"primaryKey;autoIncrement" json:"id"`
 	ShareholderID    uint64     `gorm:"not null;index:idx_shareholder_id" json:"shareholder_id"`
 	ConsumerID       uint64     `gorm:"not null;index:idx_consumer_id" json:"consumer_id"`
-	OrderID          uint64     `gorm:"not null" json:"order_id"`
-	OrderType        int8       `gorm:"type:smallint;not null" json:"order_type"`
+	OrderID          uint64     `gorm:"not null;uniqueIndex:uk_commission_order,priority:1" json:"order_id"`
+	OrderType        int8       `gorm:"type:smallint;not null;uniqueIndex:uk_commission_order,priority:2" json:"order_type"`
 	OrderAmount      float64    `gorm:"type:decimal(10,2);not null" json:"order_amount"`
 	CommissionRate   float64    `gorm:"type:decimal(4,2);not null" json:"commission_rate"`
 	CommissionAmount float64    `gorm:"type:decimal(10,2);not null" json:"commission_amount"`

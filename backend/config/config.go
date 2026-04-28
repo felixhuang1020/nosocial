@@ -23,10 +23,11 @@ type Config struct {
 }
 
 type AppConfig struct {
-	Name    string `mapstructure:"name"`
-	Version string `mapstructure:"version"`
-	Mode    string `mapstructure:"mode"`
-	Port    int    `mapstructure:"port"`
+	Name           string   `mapstructure:"name"`
+	Version        string   `mapstructure:"version"`
+	Mode           string   `mapstructure:"mode"`
+	Port           int      `mapstructure:"port"`
+	TrustedProxies []string `mapstructure:"trusted_proxies"`
 }
 
 type PostgresConfig struct {
@@ -75,10 +76,13 @@ type OSSConfig struct {
 }
 
 type WXConfig struct {
-	AppID    string `mapstructure:"appid"`
-	Secret   string `mapstructure:"secret"`
-	MchID    string `mapstructure:"mch_id"`
-	APIV3Key string `mapstructure:"api_v3_key"`
+	AppID             string `mapstructure:"appid"`
+	Secret            string `mapstructure:"secret"`
+	MchID             string `mapstructure:"mch_id"`
+	APIV3Key          string `mapstructure:"api_v3_key"`
+	MchCertSerial     string `mapstructure:"mch_cert_serial"`
+	MchPrivateKeyPath string `mapstructure:"mch_private_key_path"`
+	NotifyURL         string `mapstructure:"notify_url"`
 }
 
 type BusinessConfig struct {
@@ -125,6 +129,15 @@ func Load(path string) (*Config, error) {
 		if p, err := strconv.Atoi(val); err == nil {
 			cfg.App.Port = p
 		}
+	}
+	if val := os.Getenv("NOSOCIAL_APP_TRUSTED_PROXIES"); val != "" {
+		var proxies []string
+		for _, p := range strings.Split(val, ",") {
+			if t := strings.TrimSpace(p); t != "" {
+				proxies = append(proxies, t)
+			}
+		}
+		cfg.App.TrustedProxies = proxies
 	}
 	// PostgreSQL
 	if val := os.Getenv("NOSOCIAL_POSTGRESQL_HOST"); val != "" {
@@ -184,6 +197,18 @@ func Load(path string) (*Config, error) {
 	}
 	if val := os.Getenv("NOSOCIAL_WX_API_V3_KEY"); val != "" {
 		cfg.WX.APIV3Key = val
+	}
+	if val := os.Getenv("NOSOCIAL_WX_MCH_ID"); val != "" {
+		cfg.WX.MchID = val
+	}
+	if val := os.Getenv("NOSOCIAL_WX_MCH_CERT_SERIAL"); val != "" {
+		cfg.WX.MchCertSerial = val
+	}
+	if val := os.Getenv("NOSOCIAL_WX_MCH_PRIVATE_KEY_PATH"); val != "" {
+		cfg.WX.MchPrivateKeyPath = val
+	}
+	if val := os.Getenv("NOSOCIAL_WX_NOTIFY_URL"); val != "" {
+		cfg.WX.NotifyURL = val
 	}
 
 	C = &cfg

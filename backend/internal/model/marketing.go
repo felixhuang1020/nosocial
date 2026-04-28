@@ -7,8 +7,8 @@ import (
 // BirthdayGift 生日礼品记录
 type BirthdayGift struct {
 	ID        uint64     `gorm:"primaryKey;autoIncrement" json:"id"`
-	UserID    uint64     `gorm:"not null;index:idx_user_id" json:"user_id"`
-	Year      int        `gorm:"not null" json:"year"`
+	UserID    uint64     `gorm:"not null;uniqueIndex:uk_user_year,priority:1" json:"user_id"`
+	Year      int        `gorm:"not null;uniqueIndex:uk_user_year,priority:2" json:"year"`
 	GiftType  int8       `gorm:"type:smallint;not null;default:1" json:"gift_type"`
 	GiftName  string     `gorm:"type:varchar(64);not null" json:"gift_name"`
 	GiftValue *float64   `gorm:"type:decimal(8,2)" json:"gift_value,omitempty"`

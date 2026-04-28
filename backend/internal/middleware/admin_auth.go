@@ -32,9 +32,12 @@ func AdminAuth() gin.HandlerFunc {
 
 		claims, err := jwt.ParseAdminToken(parts[1])
 		if err != nil {
-			if err == jwt.ErrTokenExpired {
+			switch err {
+			case jwt.ErrTokenExpired:
 				response.Unauthorized(c, "登录已过期")
-			} else {
+			case jwt.ErrTokenRevoked:
+				response.Unauthorized(c, "登录已被吊销，请重新登录")
+			default:
 				response.Unauthorized(c, "无效的认证信息")
 			}
 			c.Abort()

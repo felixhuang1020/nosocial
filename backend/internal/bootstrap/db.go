@@ -57,5 +57,6 @@ func AutoMigrate(db *gorm.DB) error {
 		&model.AdminUser{},
 		&model.Setting{},
 		&model.Withdrawal{},
+		&model.PaymentNotifyLog{},
 	)
 }

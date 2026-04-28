@@ -4,7 +4,6 @@ import (
 	"net/http"
 	"nosocial/internal/pkg/response"
 	"strconv"
-	"strings"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -102,18 +101,9 @@ func RateLimitGeneral() gin.HandlerFunc {
 	return RateLimit(generalRate, "general")
 }
 
-// getClientKey 获取客户端标识（优先 X-Forwarded-For，其次 RemoteAddr）
+// getClientKey 获取客户端标识
+// 直接使用 gin.Context.ClientIP()：Gin 会根据 Engine.SetTrustedProxies 决定是否解析 XFF。
+// 未配置可信代理时返回 RemoteAddr，避免客户端伪造 X-Forwarded-For 绕过限流。
 func getClientKey(c *gin.Context) string {
-	ip := c.GetHeader("X-Forwarded-For")
-	if ip == "" {
-		ip = c.GetHeader("X-Real-IP")
-	}
-	if ip == "" {
-		ip = c.ClientIP()
-	}
-	// 处理 X-Forwarded-For 可能包含多个 IP 的情况
-	if idx := strings.Index(ip, ","); idx != -1 {
-		ip = strings.TrimSpace(ip[:idx])
-	}
-	return ip
+	return c.ClientIP()
 }

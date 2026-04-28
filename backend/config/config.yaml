@@ -3,6 +3,9 @@ app:
   version: "1.0.0"
   mode: "debug" # debug/release
   port: 8080
+  # 受信任的反向代理 IP / CIDR，实际部署时从env NOSOCIAL_APP_TRUSTED_PROXIES 覆盖
+  # 未配置时 Gin 不信任任何 XFF，ClientIP() 回落到 RemoteAddr
+  trusted_proxies: []
 
 postgresql:
   host: ""               # 从环境变量 NOSOCIAL_POSTGRESQL_HOST 读取
@@ -37,10 +40,13 @@ oss:
   region: "cn-beijing"
 
 wx:
-  appid: ""             # 从环境变量 NOSOCIAL_WX_APPID 读取
-  secret: ""            # 从环境变量 NOSOCIAL_WX_SECRET 读取
-  mch_id: "mock_mch_id"
-  api_v3_key: ""        # 从环境变量 NOSOCIAL_WX_API_V3_KEY 读取
+  appid: ""                     # 从环境变量 NOSOCIAL_WX_APPID 读取
+  secret: ""                    # 从环境变量 NOSOCIAL_WX_SECRET 读取
+  mch_id: ""                    # 从环境变量 NOSOCIAL_WX_MCH_ID 读取
+  api_v3_key: ""                # 从环境变量 NOSOCIAL_WX_API_V3_KEY 读取
+  mch_cert_serial: ""           # 从环境变量 NOSOCIAL_WX_MCH_CERT_SERIAL 读取
+  mch_private_key_path: ""      # 从环境变量 NOSOCIAL_WX_MCH_PRIVATE_KEY_PATH 读取，指向 apiclient_key.pem 绝对路径
+  notify_url: ""                # 从环境变量 NOSOCIAL_WX_NOTIFY_URL 读取，如 https://example.com/api/v1/wx/payment/notify
 
 business:
   shareholder_fee: 99.00

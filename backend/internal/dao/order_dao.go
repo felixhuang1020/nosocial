@@ -59,6 +59,26 @@ func (d *DrinkOrderDAO) UpdateStatus(id uint64, status int8) error {
 	return d.db.Model(&model.DrinkOrder{}).Where("id = ?", id).Updates(updates).Error
 }
 
+// UpdatePrepayID 写回微信 prepay_id（仅在未支付状态）
+func (d *DrinkOrderDAO) UpdatePrepayID(id uint64, prepayID string) error {
+	return d.db.Model(&model.DrinkOrder{}).
+		Where("id = ? AND status = 0", id).
+		Update("prepay_id", prepayID).Error
+}
+
+// MarkPaidCAS 幂等置为已支付：仅当 status=0 时执行更新，返回影响行数（=1表示本次真正改状态）
+func (d *DrinkOrderDAO) MarkPaidCAS(orderNo string, transactionID string, rawNotify string) (int64, error) {
+	res := d.db.Model(&model.DrinkOrder{}).
+		Where("order_no = ? AND status = 0", orderNo).
+		Updates(map[string]interface{}{
+			"status":         1,
+			"transaction_id": transactionID,
+			"notify_raw":     rawNotify,
+			"pay_time":       gorm.Expr("NOW()"),
+		})
+	return res.RowsAffected, res.Error
+}
+
 func (d *DrinkOrderDAO) GetTodayStats() (float64, int64, error) {
 	var totalAmount float64
 	var count int64

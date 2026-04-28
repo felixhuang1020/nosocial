@@ -3,6 +3,7 @@ package bootstrap
 import (
 	"fmt"
 	"nosocial/config"
+	"nosocial/internal/pkg/wxpay"
 
 	"github.com/casbin/casbin/v2"
 	"github.com/redis/go-redis/v9"
@@ -16,6 +17,7 @@ type App struct {
 	Redis  *redis.Client
 	Logger *zap.Logger
 	Casbin *casbin.Enforcer
+	WXPay  *wxpay.Client
 }
 
 func NewApp(configPath string) (*App, error) {
@@ -46,11 +48,22 @@ func NewApp(configPath string) (*App, error) {
 	redisClient, err := InitRedis(&cfg.Redis)
 	if err != nil {
 		logger.Error("init redis failed", zap.Error(err))
+		return nil, fmt.Errorf("init redis failed: %w", err)
 	}
 
 	enforcer, err := InitCasbin(db)
 	if err != nil {
 		logger.Error("init casbin failed", zap.Error(err))
+		return nil, fmt.Errorf("init casbin failed: %w", err)
+	}
+
+	// 微信支付为可选组件：release 模式下未配置完整会 fail-fast；debug 模式仅警告
+	wxpayCli, err := InitWXPay(&cfg.WX, logger)
+	if err != nil {
+		logger.Error("init wxpay failed", zap.Error(err))
+		if cfg.App.Mode == "release" {
+			return nil, fmt.Errorf("init wxpay failed: %w", err)
+		}
 	}
 
 	return &App{
@@ -59,5 +72,6 @@ func NewApp(configPath string) (*App, error) {
 		Redis:  redisClient,
 		Logger: logger,
 		Casbin: enforcer,
+		WXPay:  wxpayCli,
 	}, nil
 }

@@ -110,3 +110,11 @@ func (d *UserDAO) UpdateStatus(userID uint64, status int8) error {
 func (d *UserDAO) UpdateFreeDrinkUsed(userID uint64, used int8) error {
 	return d.db.Model(&model.User{}).Where("id = ?", userID).Update("free_drink_used", used).Error
 }
+
+// ClaimFreeDrinkCAS 领取免费酒水的原子 CAS：仅在 is_shareholder=1 且 free_drink_used=0 时置 1
+func (d *UserDAO) ClaimFreeDrinkCAS(userID uint64) (int64, error) {
+	res := d.db.Model(&model.User{}).
+		Where("id = ? AND is_shareholder = 1 AND free_drink_used = 0", userID).
+		Update("free_drink_used", 1)
+	return res.RowsAffected, res.Error
+}

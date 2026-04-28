@@ -57,6 +57,10 @@ type DrinkOrder struct {
 	DiscountAmount float64    `gorm:"type:decimal(10,2);not null;default:0.00" json:"discount_amount"`
 	PayAmount      float64    `gorm:"type:decimal(10,2);not null" json:"pay_amount"`
 	CouponID       *uint64    `json:"coupon_id,omitempty"`
+	Items          *string    `gorm:"type:jsonb" json:"items,omitempty"`
+	PrepayID       *string    `gorm:"type:varchar(64)" json:"prepay_id,omitempty"`
+	TransactionID  *string    `gorm:"type:varchar(64);uniqueIndex:uk_drink_tx_id" json:"transaction_id,omitempty"`
+	NotifyRaw      *string    `gorm:"type:jsonb" json:"notify_raw,omitempty"`
 	Status         int8       `gorm:"type:smallint;not null;default:0" json:"status"`
 	PayTime        *time.Time `gorm:"type:timestamptz" json:"pay_time,omitempty"`
 	CreatedAt      time.Time  `gorm:"autoCreateTime" json:"created_at"`

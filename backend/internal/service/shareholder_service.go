@@ -1,14 +1,19 @@
 package service
 
 import (
+	"context"
+	"errors"
 	"fmt"
+	"math"
 	"nosocial/config"
 	"nosocial/internal/dao"
 	"nosocial/internal/model"
 	"nosocial/internal/pkg/utils"
+	"nosocial/internal/pkg/wxpay"
 	"time"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type ShareholderService struct {
@@ -16,20 +21,22 @@ type ShareholderService struct {
 	orderDAO      *dao.ShareholderOrderDAO
 	commissionDAO *dao.CommissionRecordDAO
 	withdrawalDAO *dao.WithdrawalDAO
+	wx            *wxpay.Client
 	db            *gorm.DB
 }
 
-func NewShareholderService(userDAO *dao.UserDAO, orderDAO *dao.ShareholderOrderDAO, commissionDAO *dao.CommissionRecordDAO, withdrawalDAO *dao.WithdrawalDAO, db *gorm.DB) *ShareholderService {
+func NewShareholderService(userDAO *dao.UserDAO, orderDAO *dao.ShareholderOrderDAO, commissionDAO *dao.CommissionRecordDAO, withdrawalDAO *dao.WithdrawalDAO, wx *wxpay.Client, db *gorm.DB) *ShareholderService {
 	return &ShareholderService{
 		userDAO:       userDAO,
 		orderDAO:      orderDAO,
 		commissionDAO: commissionDAO,
 		withdrawalDAO: withdrawalDAO,
+		wx:            wx,
 		db:            db,
 	}
 }
 
-// ApplyShareholder 申请成为股东（创建支付订单）
+// ApplyShareholder 申请成为股东（幂等：复用未支付订单）
 func (s *ShareholderService) ApplyShareholder(userID uint64) (*model.ShareholderOrder, error) {
 	user, err := s.userDAO.GetByID(userID)
 	if err != nil {
@@ -37,6 +44,12 @@ func (s *ShareholderService) ApplyShareholder(userID uint64) (*model.Shareholder
 	}
 	if user.IsShareholder == 1 {
 		return nil, fmt.Errorf("already a shareholder")
+	}
+
+	// 幂等：已有未支付订单则直接复用
+	if existing, err := s.orderDAO.GetPendingByUser(userID); err == nil && existing.ID > 0 {
+		// 金额漂移保护：若配置改动，复用订单金额保持一致
+		return existing, nil
 	}
 
 	order := &model.ShareholderOrder{
@@ -50,45 +63,98 @@ func (s *ShareholderService) ApplyShareholder(userID uint64) (*model.Shareholder
 	return order, nil
 }
 
-// GetPayParams 获取Mock支付参数
-func (s *ShareholderService) GetPayParams(userID uint64, orderNo string) (map[string]interface{}, error) {
+// GetPayParams 获取股东订单支付参数（微信 JSAPI 真实下单）
+func (s *ShareholderService) GetPayParams(userID uint64, orderNo string) (*wxpay.PrepayParams, error) {
 	order, err := s.orderDAO.GetByOrderNo(orderNo)
 	if err != nil {
 		return nil, err
 	}
 	if order.UserID != userID {
-		return nil, fmt.Errorf("order not belong to user")
+		return nil, errors.New("order not belong to user")
+	}
+	if order.PayStatus != 0 {
+		return nil, errors.New("order already paid")
+	}
+	if !s.wx.IsConfigured() {
+		return nil, wxpay.ErrNotConfigured
 	}
 
-	// MOCK 支付参数
-	return map[string]interface{}{
-		"appId":     config.C.WX.AppID,
-		"timeStamp": fmt.Sprintf("%d", time.Now().Unix()),
-		"nonceStr":  utils.GenerateInviteCode(),
-		"package":   fmt.Sprintf("prepay_id=mock_prepay_%s", orderNo),
-		"signType":  "RSA",
-		"paySign":   "mock_pay_sign",
-	}, nil
+	user, err := s.userDAO.GetByID(userID)
+	if err != nil {
+		return nil, err
+	}
+	if user.Openid == "" {
+		return nil, errors.New("user openid missing")
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	// 已有 prepay_id 复用
+	if order.PrepayID != nil && *order.PrepayID != "" {
+		if p, err := s.wx.BuildMiniPaySign(ctx, *order.PrepayID); err == nil {
+			return p, nil
+		}
+	}
+
+	amountFen := int64(math.Round(order.Amount * 100))
+	if amountFen <= 0 {
+		return nil, errors.New("invalid amount")
+	}
+
+	params, err := s.wx.PrepayJSAPI(ctx, wxpay.PrepayJSAPIReq{
+		OutTradeNo:  order.OrderNo,
+		Description: "NoSocial 股东注册",
+		AmountFen:   amountFen,
+		OpenID:      user.Openid,
+		Attach:      "shareholder",
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	_ = s.orderDAO.UpdatePrepayID(order.OrderNo, params.PrepayID)
+	return params, nil
 }
 
-// PayCallback 支付回调（MOCK）
-func (s *ShareholderService) PayCallback(orderNo, transactionID string) error {
+// PayCallback 股东注册订单支付回调处理（幂等 + 事务）
+// 返回值 changed 表示本次调用是否真正将订单置为已支付（用于上层判断是否发通知等）
+func (s *ShareholderService) PayCallback(orderNo, transactionID, rawNotify string, paidFen int64) (changed bool, err error) {
 	order, err := s.orderDAO.GetByOrderNo(orderNo)
 	if err != nil {
-		return err
+		return false, err
+	}
+	// 金额一致性校验
+	expected := int64(math.Round(order.Amount * 100))
+	if paidFen > 0 && expected > 0 && paidFen != expected {
+		return false, fmt.Errorf("amount mismatch: expect %d, got %d", expected, paidFen)
+	}
+	// 已支付直接视为幂等成功
+	if order.PayStatus == 1 {
+		return false, nil
 	}
 
-	return s.db.Transaction(func(tx *gorm.DB) error {
-		// 更新订单状态
-		if err := tx.Model(&model.ShareholderOrder{}).Where("order_no = ?", orderNo).Updates(map[string]interface{}{
-			"pay_status":     1,
-			"transaction_id": transactionID,
-			"pay_time":       gorm.Expr("NOW()"),
-		}).Error; err != nil {
-			return err
+	err = s.db.Transaction(func(tx *gorm.DB) error {
+		// CAS 置为已支付
+		res := tx.Model(&model.ShareholderOrder{}).
+			Where("order_no = ? AND pay_status = 0", orderNo).
+			Updates(map[string]interface{}{
+				"pay_status":     1,
+				"transaction_id": transactionID,
+				"notify_raw":     rawNotify,
+				"pay_time":       gorm.Expr("NOW()"),
+			})
+		if res.Error != nil {
+			return res.Error
 		}
+		if res.RowsAffected == 0 {
+			// 已被其它回调处理过
+			changed = false
+			return nil
+		}
+		changed = true
 
-		// 更新用户为股东（有效期一年）
+		// 升级用户为股东（有效期一年）
 		inviteCode := utils.GenerateInviteCode()
 		expireAt := time.Now().AddDate(1, 0, 0)
 		if err := tx.Model(&model.User{}).Where("id = ?", order.UserID).Updates(map[string]interface{}{
@@ -100,9 +166,9 @@ func (s *ShareholderService) PayCallback(orderNo, transactionID string) error {
 		}).Error; err != nil {
 			return err
 		}
-
 		return nil
 	})
+	return changed, err
 }
 
 func (s *ShareholderService) GetShareholderList(offset, limit int) ([]*model.User, int64, error) {
@@ -125,32 +191,33 @@ func (s *ShareholderService) GetTeamCount(userID uint64) (int64, error) {
 	return s.userDAO.GetChildrenCount(userID)
 }
 
-// CalculateCommission 计算佣金
-// Withdraw 申请提现
+// Withdraw 申请提现（原子扣余额 + 创建提现记录 + CAS 防超卖）
 func (s *ShareholderService) Withdraw(userID uint64, amount float64) error {
 	if amount <= 0 {
-		return fmt.Errorf("invalid amount")
+		return errors.New("invalid amount")
 	}
+	amount = round2(amount)
 
 	user, err := s.userDAO.GetByID(userID)
 	if err != nil {
 		return err
 	}
 	if user.IsShareholder != 1 {
-		return fmt.Errorf("not a shareholder")
-	}
-	if user.Balance < amount {
-		return fmt.Errorf("insufficient balance")
+		return errors.New("not a shareholder")
 	}
 
 	return s.db.Transaction(func(tx *gorm.DB) error {
-		// 扣除余额
-		if err := tx.Model(&model.User{}).Where("id = ?", userID).
-			Update("balance", gorm.Expr("balance - ?", amount)).Error; err != nil {
-			return err
+		// CAS 扣余额：WHERE balance >= amount，避免并发提现超额
+		res := tx.Model(&model.User{}).
+			Where("id = ? AND balance >= ?", userID, amount).
+			Update("balance", gorm.Expr("balance - ?", amount))
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			return errors.New("insufficient balance")
 		}
 
-		// 创建提现记录
 		record := &model.Withdrawal{
 			UserID: userID,
 			Amount: amount,
@@ -159,7 +226,6 @@ func (s *ShareholderService) Withdraw(userID uint64, amount float64) error {
 		if err := tx.Create(record).Error; err != nil {
 			return err
 		}
-
 		return nil
 	})
 }
@@ -169,18 +235,18 @@ func (s *ShareholderService) GetWithdrawals(userID uint64, offset, limit int) ([
 	return s.withdrawalDAO.ListByUser(userID, offset, limit)
 }
 
+// CalculateCommission 在订单支付成功后调用：原子创建佣金记录 + 增加股东累计收益
 func (s *ShareholderService) CalculateCommission(order *model.DrinkOrder) error {
-	if order.ShareholderID == nil || *order.ShareholderID == 0 {
+	if order == nil || order.ShareholderID == nil || *order.ShareholderID == 0 {
 		return nil
 	}
-
 	shareholder, err := s.userDAO.GetByID(*order.ShareholderID)
 	if err != nil || shareholder.IsShareholder != 1 {
 		return nil
 	}
 
 	rate := config.C.Business.CommissionRate
-	commission := order.PayAmount * rate
+	commission := round2(order.PayAmount * rate)
 
 	record := &model.CommissionRecord{
 		ShareholderID:    *order.ShareholderID,
@@ -194,8 +260,14 @@ func (s *ShareholderService) CalculateCommission(order *model.DrinkOrder) error 
 	}
 
 	return s.db.Transaction(func(tx *gorm.DB) error {
-		if err := tx.Create(record).Error; err != nil {
-			return err
+		// 幂等插入：命中唯一索引 uk_commission_order 则跳过，不翻倍结算
+		res := tx.Clauses(clause.OnConflict{DoNothing: true}).Create(record)
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			// 已存在相同 (order_id, order_type) 的佣金记录，结算核将由原始事务完成
+			return nil
 		}
 		if err := tx.Model(&model.User{}).Where("id = ?", *order.ShareholderID).
 			Update("total_earning", gorm.Expr("total_earning + ?", commission)).Error; err != nil {

@@ -1,5 +1,26 @@
 import { appStore } from './stores/app';
 
+// 根据小程序运行环境动态选择 API 地址
+// - develop / trial：开发 / 体验版
+// - release：正式版（必须使用 HTTPS 且在微信后台配置为合法域名）
+const resolveApiBaseUrl = () => {
+  try {
+    const info = wx.getAccountInfoSync && wx.getAccountInfoSync();
+    const envVersion = info && info.miniProgram && info.miniProgram.envVersion;
+    if (envVersion === 'release') {
+      // ✅ 生产环境：部署前必须替换为真实域名
+      return 'https://api.your-domain.com/api/v1';
+    }
+    if (envVersion === 'trial') {
+      return 'https://api.your-domain.com/api/v1';
+    }
+  } catch (e) {
+    console.warn('[App] getAccountInfoSync failed, fallback to dev base url');
+  }
+  // 开发默认：微信开发者工具能访问本机服务
+  return 'http://localhost:8080/api/v1';
+};
+
 App({
   globalData: {
     userInfo: null,
@@ -11,10 +32,8 @@ App({
     screenWidth: 375,
     screenHeight: 812,
     safeAreaBottom: 0,
-    // API 基础地址
-    // 开发环境：http://127.0.0.1:8080/api/v1
-    // 生产环境：在 project.config.json / 微信后台配置合法域名后替换
-    apiBaseUrl: ''
+    // API 基础地址（由 resolveApiBaseUrl() 根据 envVersion 运行时注入）
+    apiBaseUrl: resolveApiBaseUrl()
   },
 
   store: appStore,

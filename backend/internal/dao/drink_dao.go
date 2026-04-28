@@ -87,3 +87,13 @@ func (d *DrinkDAO) Update(drink *model.Drink) error {
 func (d *DrinkDAO) Delete(id uint64) error {
 	return d.db.Delete(&model.Drink{}, id).Error
 }
+
+// ListByIDs 按 ID 批量查询上架的酒水（用于服务端重算订单金额）
+func (d *DrinkDAO) ListByIDs(ids []uint64) ([]*model.Drink, error) {
+	if len(ids) == 0 {
+		return []*model.Drink{}, nil
+	}
+	var drinks []*model.Drink
+	err := d.db.Where("id IN ? AND status = ?", ids, 1).Find(&drinks).Error
+	return drinks, err
+}

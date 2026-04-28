@@ -8,7 +8,8 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-// getPageSize 从 query 参数解析 page/size，默认 1/20
+// getPageSize 从 query 参数解析 page/size，默认 1/20，上限 100
+// 封顶是为了防止恶意传入 size=1000000 抜库 / 打爆 Response。
 func getPageSize(c *gin.Context) (int, int) {
 	page, size := 1, 20
 	if p := c.Query("page"); p != "" {
@@ -20,6 +21,9 @@ func getPageSize(c *gin.Context) (int, int) {
 		if v, err := strconv.Atoi(s); err == nil && v > 0 {
 			size = v
 		}
+	}
+	if size > 100 {
+		size = 100
 	}
 	return page, size
 }

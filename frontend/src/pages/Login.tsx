@@ -148,10 +148,6 @@ export default function Login() {
                 )}
               </Button>
             </motion.form>
-
-            <p className="mt-6 text-center text-xs text-text-muted">
-              默认账号: admin / admin123
-            </p>
           </motion.div>
         </AnimatePresence>
       </div>

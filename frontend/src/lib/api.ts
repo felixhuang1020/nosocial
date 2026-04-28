@@ -1,9 +1,23 @@
 // NoSocial Admin API Client
 const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1';
+const REQUEST_TIMEOUT_MS = 15000;
 
 // Helper: get stored admin token
 function getToken(): string | null {
   return localStorage.getItem('admin_token');
+}
+
+// 处理 401：清掉本地凭证并引导用户回登录页
+// 用 location 而不是 react-router 以防止循环依赖
+function handleUnauthorized() {
+  try {
+    localStorage.removeItem('admin_token');
+  } catch {
+    // ignore
+  }
+  if (typeof window !== 'undefined' && !window.location.pathname.endsWith('/login')) {
+    window.location.replace('/login');
+  }
 }
 
 // Helper: unified fetch wrapper
@@ -22,10 +36,30 @@ async function request<T>(
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const resp = await fetch(url, {
-    ...options,
-    headers,
-  });
+  // 超时控制：避免页面挂死在 hung 连接上
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let resp: Response;
+  try {
+    resp = await fetch(url, {
+      ...options,
+      headers,
+      signal: options.signal ?? controller.signal,
+    });
+  } catch (err) {
+    clearTimeout(timer);
+    if ((err as Error).name === 'AbortError') {
+      throw new Error('请求超时，请稍后重试');
+    }
+    throw err;
+  }
+  clearTimeout(timer);
+
+  if (resp.status === 401) {
+    handleUnauthorized();
+    throw new Error('登录已过期，请重新登录');
+  }
 
   if (!resp.ok) {
     // 尝试从响应体中提取错误消息
@@ -356,6 +390,9 @@ export interface AdminSettings {
   business_hours?: string;
   wifi_name?: string;
   wifi_password?: string;
+  wx_appid?: string;
+  wx_mch_id?: string;
+  wx_notify_url?: string;
   [key: string]: unknown;
 }
 

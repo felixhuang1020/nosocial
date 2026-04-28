@@ -1,18 +1,52 @@
 package jwt
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"nosocial/config"
+	"nosocial/internal/bootstrap"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/google/uuid"
 )
 
 var (
 	ErrInvalidToken = errors.New("invalid token")
 	ErrTokenExpired = errors.New("token expired")
+	ErrTokenRevoked = errors.New("token revoked")
 )
+
+const revokePrefix = "nosocial:jwt:revoked:"
+
+// Revoke 将给定 jti 加入 Redis 黑名单（ttl 建议与 Token 剩余有效期保持一致）
+// Redis 不可用时入 fail-open：返回错误但不影响已颁发 token 的验证流程。
+func Revoke(ctx context.Context, jti string, ttl time.Duration) error {
+	if jti == "" || bootstrap.Redis == nil {
+		return nil
+	}
+	if ttl <= 0 {
+		ttl = 24 * time.Hour
+	}
+	return bootstrap.Redis.Set(ctx, revokePrefix+jti, "1", ttl).Err()
+}
+
+// IsRevoked 检查 jti 是否已被吊销。Redis 不可用时返回 false（fail-open）避免全站登录故障。
+func IsRevoked(ctx context.Context, jti string) bool {
+	if jti == "" || bootstrap.Redis == nil {
+		return false
+	}
+	cnt, err := bootstrap.Redis.Exists(ctx, revokePrefix+jti).Result()
+	if err != nil {
+		return false
+	}
+	return cnt > 0
+}
+
+func newJTI() string {
+	return uuid.NewString()
+}
 
 // WXClaims 小程序用户JWT Claims
 type WXClaims struct {
@@ -36,6 +70,7 @@ func GenerateWXToken(userID uint64, openid string) (string, error) {
 		UserID: userID,
 		Openid: openid,
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        newJTI(),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(cfg.WXExpire) * time.Second)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -60,6 +95,9 @@ func ParseWXToken(tokenString string) (*WXClaims, error) {
 		return nil, ErrInvalidToken
 	}
 	if claims, ok := token.Claims.(*WXClaims); ok && token.Valid {
+		if IsRevoked(context.Background(), claims.ID) {
+			return nil, ErrTokenRevoked
+		}
 		return claims, nil
 	}
 	return nil, ErrInvalidToken
@@ -73,6 +111,7 @@ func GenerateAdminToken(adminID uint32, username string, role int8) (string, err
 		Username: username,
 		Role:     role,
 		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        newJTI(),
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(time.Duration(cfg.AdminExpire) * time.Second)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
 		},
@@ -97,6 +136,9 @@ func ParseAdminToken(tokenString string) (*AdminClaims, error) {
 		return nil, ErrInvalidToken
 	}
 	if claims, ok := token.Claims.(*AdminClaims); ok && token.Valid {
+		if IsRevoked(context.Background(), claims.ID) {
+			return nil, ErrTokenRevoked
+		}
 		return claims, nil
 	}
 	return nil, ErrInvalidToken

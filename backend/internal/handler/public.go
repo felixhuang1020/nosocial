@@ -59,6 +59,15 @@ func (h *PublicHandler) ListDrinks(c *gin.Context) {
 			size = v
 		}
 	}
+	if size <= 0 {
+		size = 20
+	}
+	if size > 100 {
+		size = 100
+	}
+	if page <= 0 {
+		page = 1
+	}
 
 	drinks, total, err := h.drinkService.GetDrinkList(categoryID, status, page, size)
 	if err != nil {

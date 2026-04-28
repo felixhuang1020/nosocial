@@ -214,31 +214,61 @@ export default function Settings() {
             </div>
           </CardHeader>
           <CardContent className="space-y-5">
+            <div className="rounded-md border border-amber-200 bg-amber-50 p-3 text-[12px] leading-5 text-amber-900">
+              <p className="font-medium">重要提示</p>
+              <p className="mt-1 text-amber-800">
+                APIv3 密钥、商户私钥、证书序列号等敏感凭据出于安全合规统一在服务器 <code className="rounded bg-amber-100 px-1">config/config.yaml</code> 中配置，不在后台暴露或存库。
+                商户号与 AppID 可在此处查看，修改请同步更新服务器配置并重启服务。
+              </p>
+            </div>
             <div className="space-y-2">
               <Label className="text-text-secondary text-xs">AppID</Label>
               <Input
                 value={String(settings.wx_appid || '')}
                 onChange={(e) => handleChange('wx_appid', e.target.value)}
+                placeholder="wx开头的小程序 AppID"
                 className="bg-background border-border text-text-primary"
               />
             </div>
 
             <div className="space-y-2">
-              <Label className="text-text-secondary text-xs">MCH ID (商户号)</Label>
+              <Label className="text-text-secondary text-xs">MCH ID （商户号）</Label>
               <Input
                 value={String(settings.wx_mch_id || '')}
                 onChange={(e) => handleChange('wx_mch_id', e.target.value)}
+                placeholder="微信支付直连商户号"
                 className="bg-background border-border text-text-primary"
               />
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-text-secondary text-xs">回调地址 Notify URL</Label>
+              <Input
+                value={String(settings.wx_notify_url || '')}
+                onChange={(e) => handleChange('wx_notify_url', e.target.value)}
+                placeholder="https://your-domain.com/api/v1/payment/wxpay/notify"
+                className="bg-background border-border text-text-primary"
+              />
+              <p className="text-[11px] text-text-muted">需通过 HTTPS 公网访问，微信支付仅对 443 端口发起回调请求。</p>
             </div>
 
             <div className="space-y-2">
               <Label className="text-text-secondary text-xs">APIv3 密钥</Label>
               <Input
                 type="password"
-                placeholder="请输入密钥"
-                className="bg-background border-border text-text-primary"
+                value="●●●●●●●●●●●●"
+                readOnly
+                disabled
+                className="bg-background border-border text-text-muted cursor-not-allowed"
               />
+              <p className="text-[11px] text-text-muted">由服务器配置文件统一管理，此处不支持在线修改。</p>
+            </div>
+
+            <div className="space-y-2">
+              <Label className="text-text-secondary text-xs">商户证书与私钥</Label>
+              <div className="rounded border border-border bg-background px-3 py-2 text-[12px] text-text-muted">
+                证书序列号 / 私钥文件路径由服务器配置提供；平台证书由 SDK 自动轮换。
+              </div>
             </div>
           </CardContent>
         </Card>

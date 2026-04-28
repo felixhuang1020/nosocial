@@ -1,0 +1,28 @@
+# 避免把敏感文件 / 构建产物带入镜像
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+apiclient_key.pem
+apiclient_cert.pem
+
+# 本地日志 / 运行产物
+logs/
+*.log
+main
+bin/
+dist/
+
+# Git / IDE / 文档
+.git
+.gitignore
+.idea
+.vscode
+*.md
+docs/
+
+# 测试 / 缓存
+*_test.go
+coverage.out
+tmp/

@@ -3,14 +3,13 @@
  * 统一处理 baseURL、token、错误处理
  */
 
-// 从配置或环境变量获取 BASE_URL，支持开发和生产环境
+// 从全局 App 读取 API 基地址（由 app.js resolveApiBaseUrl 注入，按 envVersion 区分）
 const getBaseUrl = () => {
-  // 尝试从全局配置读取
   const app = getApp && getApp();
   if (app && app.globalData && app.globalData.apiBaseUrl) {
     return app.globalData.apiBaseUrl;
   }
-  // 开发环境默认值（微信模拟器内 localhost 会被代理到宿主机，127.0.0.1 不行）
+  // 开发时微信开发工具能访问本机；真机 / 线上仍需 https 合法域名
   return 'http://localhost:8080/api/v1';
 };
 

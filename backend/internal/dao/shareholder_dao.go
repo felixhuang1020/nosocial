@@ -33,6 +33,34 @@ func (d *ShareholderOrderDAO) UpdatePayStatus(orderNo string, status int8, trans
 	return d.db.Model(&model.ShareholderOrder{}).Where("order_no = ?", orderNo).Updates(updates).Error
 }
 
+// GetPendingByUser 获取用户的未支付股东订单（幂等：避免重复创建）
+func (d *ShareholderOrderDAO) GetPendingByUser(userID uint64) (*model.ShareholderOrder, error) {
+	var order model.ShareholderOrder
+	err := d.db.Where("user_id = ? AND pay_status = 0", userID).
+		Order("id DESC").First(&order).Error
+	return &order, err
+}
+
+// UpdatePrepayID 写回 prepay_id（仅在未支付状态）
+func (d *ShareholderOrderDAO) UpdatePrepayID(orderNo, prepayID string) error {
+	return d.db.Model(&model.ShareholderOrder{}).
+		Where("order_no = ? AND pay_status = 0", orderNo).
+		Update("prepay_id", prepayID).Error
+}
+
+// MarkPaidCAS 幂等置为已支付，返回影响行数
+func (d *ShareholderOrderDAO) MarkPaidCAS(orderNo, transactionID, rawNotify string) (int64, error) {
+	res := d.db.Model(&model.ShareholderOrder{}).
+		Where("order_no = ? AND pay_status = 0", orderNo).
+		Updates(map[string]interface{}{
+			"pay_status":     1,
+			"transaction_id": transactionID,
+			"notify_raw":     rawNotify,
+			"pay_time":       gorm.Expr("NOW()"),
+		})
+	return res.RowsAffected, res.Error
+}
+
 // CommissionRecordDAO 佣金记录DAO
 type CommissionRecordDAO struct {
 	db *gorm.DB
