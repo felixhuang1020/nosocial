@@ -52,7 +52,7 @@ func SetupRouter(app *bootstrap.App) *gin.Engine {
 	// 初始化Service
 	userService := service.NewUserService(userDAO, &app.Config.WX)
 	shareholderService := service.NewShareholderService(userDAO, shareholderOrderDAO, commissionDAO, withdrawalDAO, app.WXPay, app.DB)
-	tarotService := service.NewTarotService(tarotCardDAO, tarotReadingDAO, tarotMappingDAO, drinkDAO)
+	tarotService := service.NewTarotService(tarotCardDAO, tarotReadingDAO, tarotMappingDAO, drinkDAO, app.DB)
 	drinkService := service.NewDrinkService(drinkDAO, categoryDAO)
 	orderService := service.NewOrderService(orderDAO, drinkDAO, couponDAO, userDAO, app.WXPay)
 	reviewService := service.NewReviewService(reviewDAO, couponDAO, userDAO, app.DB)
@@ -176,6 +176,8 @@ func SetupRouter(app *bootstrap.App) *gin.Engine {
 
 			adminAuth.GET("/tarot/mappings", tarotAdminHandler.Mappings)
 			adminAuth.PUT("/tarot/mappings", tarotAdminHandler.UpdateMapping)
+			adminAuth.GET("/tarot/cards", tarotAdminHandler.ListCards)
+			adminAuth.PUT("/tarot/cards/:id", tarotAdminHandler.UpdateCard)
 
 			adminAuth.GET("/banners", bannerAdminHandler.List)
 			adminAuth.POST("/banners", bannerAdminHandler.Create)

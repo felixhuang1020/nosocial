@@ -1,12 +1,17 @@
 package service
 
 import (
+	cryptorand "crypto/rand"
+	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
-	"math/rand"
 	"nosocial/internal/dao"
 	"nosocial/internal/model"
 	"time"
+
+	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type TarotService struct {
@@ -14,15 +19,47 @@ type TarotService struct {
 	readingDAO *dao.TarotReadingDAO
 	mappingDAO *dao.TarotDrinkMappingDAO
 	drinkDAO   *dao.DrinkDAO
+	db         *gorm.DB
 }
 
-func NewTarotService(cardDAO *dao.TarotCardDAO, readingDAO *dao.TarotReadingDAO, mappingDAO *dao.TarotDrinkMappingDAO, drinkDAO *dao.DrinkDAO) *TarotService {
+func NewTarotService(cardDAO *dao.TarotCardDAO, readingDAO *dao.TarotReadingDAO, mappingDAO *dao.TarotDrinkMappingDAO, drinkDAO *dao.DrinkDAO, db *gorm.DB) *TarotService {
 	return &TarotService{
 		cardDAO:    cardDAO,
 		readingDAO: readingDAO,
 		mappingDAO: mappingDAO,
 		drinkDAO:   drinkDAO,
+		db:         db,
 	}
+}
+
+// secureIntn 安全随机数，相对于 math/rand 不可预测。fallback 到 time 仅当 crypto 不可用。
+func secureIntn(n int) int {
+	if n <= 0 {
+		return 0
+	}
+	var b [8]byte
+	if _, err := cryptorand.Read(b[:]); err != nil {
+		return int(time.Now().UnixNano() % int64(n))
+	}
+	v := binary.BigEndian.Uint64(b[:])
+	return int(v % uint64(n))
+}
+
+// secureBoolWithProb 按指定概率返回 true（只接受 0-1）
+func secureBoolWithProb(p float32) bool {
+	if p <= 0 {
+		return false
+	}
+	if p >= 1 {
+		return true
+	}
+	var b [4]byte
+	if _, err := cryptorand.Read(b[:]); err != nil {
+		return false
+	}
+	u := binary.BigEndian.Uint32(b[:])
+	threshold := uint32(p * float32(^uint32(0)))
+	return u < threshold
 }
 
 type DivineReq struct {
@@ -55,39 +92,38 @@ type DrinkRecommend struct {
 }
 
 func (s *TarotService) Divine(userID uint64, req *DivineReq) (*DivineResp, error) {
-	// 1. 生成随机种子
-	seed := time.Now().UnixNano() + int64(userID)
-	r := rand.New(rand.NewSource(seed))
+	// 1. 安全随机：0-77 卡号 + 20% 逆位概率
+	cardNo := secureIntn(78)
+	isReversed := secureBoolWithProb(0.2)
 
-	// 2. 抽取1张牌（0-77）
-	cardNo := r.Intn(78)
-
-	// 3. 20%概率逆位
-	isReversed := r.Float32() < 0.2
-
-	// 4. 查询牌信息
+	// 2. 查询牌信息
 	card, err := s.cardDAO.GetByCardNo(cardNo)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return nil, fmt.Errorf("塔罗牌库尚未初始化，请联系管理员")
+		}
 		return nil, err
 	}
 
-	// 5. 查询映射关系
+	// 3. 查询映射关系（容错：无映射时降级返回牌片 + 空推荐）
 	isRevInt := int8(0)
 	if isReversed {
 		isRevInt = 1
 	}
 	mapping, err := s.mappingDAO.GetByCardNo(cardNo, isRevInt)
-	if err != nil {
+	var drink *model.Drink
+	mappingOK := false
+	if err == nil {
+		mappingOK = true
+		d, derr := s.drinkDAO.GetByID(mapping.DrinkID)
+		if derr == nil && d != nil && d.Status == 1 {
+			drink = d
+		}
+	} else if !errors.Is(err, gorm.ErrRecordNotFound) {
 		return nil, err
 	}
 
-	// 6. 查询酒水
-	drink, err := s.drinkDAO.GetByID(mapping.DrinkID)
-	if err != nil {
-		return nil, err
-	}
-
-	// 7. 生成含义
+	// 4. 生成含义
 	meaning := ""
 	if card.UprightMeaning != nil {
 		meaning = *card.UprightMeaning
@@ -96,9 +132,26 @@ func (s *TarotService) Divine(userID uint64, req *DivineReq) (*DivineResp, error
 		meaning = *card.ReversedMeaning
 	}
 
-	// 8. 生成推荐理由
+	resp := &DivineResp{
+		Cards: []CardResult{
+			{
+				CardNo:     cardNo,
+				Name:       card.Name,
+				IsReversed: isReversed,
+				ImageURL:   card.ImageURL,
+				Meaning:    meaning,
+			},
+		},
+	}
+
+	// 5. 若映射或酒水缺失：不写入 reading（RecommendedDrinkID NOT NULL），返回空推荐
+	if !mappingOK || drink == nil {
+		return resp, nil
+	}
+
+	// 6. 生成推荐理由
 	reason := ""
-	if mapping.ReasonTemplate != nil {
+	if mapping.ReasonTemplate != nil && *mapping.ReasonTemplate != "" {
 		reason = *mapping.ReasonTemplate
 	} else {
 		position := "正位"
@@ -112,7 +165,7 @@ func (s *TarotService) Divine(userID uint64, req *DivineReq) (*DivineResp, error
 		reason = fmt.Sprintf("【%s】%s代表%s。这杯%s正适合当下的你。", card.Name, position, keywords, drink.Name)
 	}
 
-	// 9. 保存记录
+	// 7. 保存占卜记录
 	cardsJSON, _ := json.Marshal([]map[string]interface{}{
 		{
 			"card_no":     cardNo,
@@ -134,27 +187,17 @@ func (s *TarotService) Divine(userID uint64, req *DivineReq) (*DivineResp, error
 		return nil, err
 	}
 
-	return &DivineResp{
-		ReadingID: reading.ID,
-		Cards: []CardResult{
-			{
-				CardNo:     cardNo,
-				Name:       card.Name,
-				IsReversed: isReversed,
-				ImageURL:   card.ImageURL,
-				Meaning:    meaning,
-			},
-		},
-		Recommend: &DrinkRecommend{
-			DrinkID:     drink.ID,
-			Name:        drink.Name,
-			EnglishName: drink.EnglishName,
-			ImageURL:    drink.ImageURL,
-			Price:       drink.Price,
-			Reason:      reason,
-			Alcohol:     drink.Alcohol,
-		},
-	}, nil
+	resp.ReadingID = reading.ID
+	resp.Recommend = &DrinkRecommend{
+		DrinkID:     drink.ID,
+		Name:        drink.Name,
+		EnglishName: drink.EnglishName,
+		ImageURL:    drink.ImageURL,
+		Price:       drink.Price,
+		Reason:      reason,
+		Alcohol:     drink.Alcohol,
+	}
+	return resp, nil
 }
 
 func (s *TarotService) GetHistory(userID uint64, offset, limit int) ([]*model.TarotReading, int64, error) {
@@ -163,6 +206,17 @@ func (s *TarotService) GetHistory(userID uint64, offset, limit int) ([]*model.Ta
 
 func (s *TarotService) GetCards() ([]*model.TarotCard, error) {
 	return s.cardDAO.List()
+}
+
+func (s *TarotService) UpdateCard(id uint32, imageURL string) error {
+	res := s.db.Model(&model.TarotCard{}).Where("id = ?", id).Update("image_url", imageURL)
+	if res.Error != nil {
+		return res.Error
+	}
+	if res.RowsAffected == 0 {
+		return gorm.ErrRecordNotFound
+	}
+	return nil
 }
 
 func (s *TarotService) GetAllMappings() ([]*model.TarotDrinkMapping, error) {
@@ -178,33 +232,66 @@ type MappingItem struct {
 }
 
 func (s *TarotService) UpdateMappings(items []MappingItem) error {
-	for _, item := range items {
-		isRev := int8(0)
-		if item.IsReversed {
-			isRev = 1
+	if len(items) == 0 {
+		return nil
+	}
+	// 1. 基础校验：CardNo 范围 + DrinkID 非零 + MatchScore 范围
+	drinkIDSet := make(map[uint64]struct{}, len(items))
+	for _, it := range items {
+		if it.CardNo < 0 || it.CardNo > 77 {
+			return fmt.Errorf("非法卡号 card_no=%d", it.CardNo)
 		}
-		reason := item.ReasonTemplate
-		mapping := &model.TarotDrinkMapping{
-			CardNo:         item.CardNo,
-			DrinkID:        item.DrinkID,
-			IsReversed:     isRev,
-			MatchScore:     item.MatchScore,
-			ReasonTemplate: &reason,
+		if it.DrinkID == 0 {
+			return fmt.Errorf("card_no=%d 的 drink_id 不能为空", it.CardNo)
 		}
-		// 查找是否已存在
-		existing, err := s.mappingDAO.GetByCardNoAndReversed(item.CardNo, isRev)
-		if err == nil {
-			// 更新
-			mapping.ID = existing.ID
-			if err := s.mappingDAO.Update(mapping); err != nil {
-				return err
-			}
-		} else {
-			// 创建
-			if err := s.mappingDAO.Create(mapping); err != nil {
-				return err
-			}
+		if it.MatchScore < 0 || it.MatchScore > 100 {
+			return fmt.Errorf("card_no=%d 的 match_score 必须在 0-100 之间", it.CardNo)
+		}
+		drinkIDSet[it.DrinkID] = struct{}{}
+	}
+	// 2. 批量校验 DrinkID 存在性且为上架状态
+	drinkIDs := make([]uint64, 0, len(drinkIDSet))
+	for id := range drinkIDSet {
+		drinkIDs = append(drinkIDs, id)
+	}
+	drinks, err := s.drinkDAO.ListByIDs(drinkIDs)
+	if err != nil {
+		return err
+	}
+	existing := make(map[uint64]struct{}, len(drinks))
+	for _, d := range drinks {
+		existing[d.ID] = struct{}{}
+	}
+	for id := range drinkIDSet {
+		if _, ok := existing[id]; !ok {
+			return fmt.Errorf("drink_id=%d 不存在或已下架", id)
 		}
 	}
-	return nil
+
+	// 3. 事务内 UPSERT（ON CONFLICT(card_no, is_reversed) DO UPDATE）
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		for _, item := range items {
+			isRev := int8(0)
+			if item.IsReversed {
+				isRev = 1
+			}
+			reason := item.ReasonTemplate
+			mapping := &model.TarotDrinkMapping{
+				CardNo:         item.CardNo,
+				DrinkID:        item.DrinkID,
+				IsReversed:     isRev,
+				MatchScore:     item.MatchScore,
+				ReasonTemplate: &reason,
+			}
+			if err := tx.Clauses(clause.OnConflict{
+				Columns: []clause.Column{{Name: "card_no"}, {Name: "is_reversed"}},
+				DoUpdates: clause.AssignmentColumns([]string{
+					"drink_id", "match_score", "reason_template",
+				}),
+			}).Create(mapping).Error; err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 }

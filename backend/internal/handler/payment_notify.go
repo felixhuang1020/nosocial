@@ -84,29 +84,21 @@ func (h *PaymentNotifyHandler) Notify(c *gin.Context) {
 	raw, _ := json.Marshal(content)
 	rawStr := string(raw)
 
-	// 回调去重（transaction_id 全局唯一）+ 审计流水
-	logRec := &model.PaymentNotifyLog{
-		OrderNo:       content.OutTradeNo,
-		TransactionID: content.TransactionID,
-		OrderType:     content.Attach,
-		RawBody:       rawStr,
-	}
-	if err := h.notifyDAO.Insert(logRec); err != nil {
-		// 唯一键冲突 = 重复通知，视为幂等成功
-		if isDupKey(err) {
-			h.logger.Info("回调重复（transaction_id 已入库），忽略",
-				zap.String("out_trade_no", content.OutTradeNo),
-				zap.String("transaction_id", logx.MaskTx(content.TransactionID)),
-			)
-			wxpayOK(c)
-			return
-		}
-		h.logger.Error("写入回调流水失败", zap.Error(err))
+	// 幂等检查：若流水中已存在该 transaction_id，表明之前已成功处理过，直接返回 OK
+	if exists, err := h.notifyDAO.ExistsTxID(content.TransactionID); err != nil {
+		h.logger.Error("查询回调流水失败", zap.Error(err))
 		wxpayFail(c, http.StatusInternalServerError, "FAIL", "server error")
+		return
+	} else if exists {
+		h.logger.Info("回调重复（transaction_id 已处理），忽略",
+			zap.String("out_trade_no", content.OutTradeNo),
+			zap.String("transaction_id", logx.MaskTx(content.TransactionID)),
+		)
+		wxpayOK(c)
 		return
 	}
 
-	// 按 attach 分流业务处理
+	// 按 attach 分流业务处理 —— 业务失败不写流水，以便微信重推重试
 	switch content.Attach {
 	case "drink":
 		order, changed, err := h.orderService.PayCallback(
@@ -148,7 +140,18 @@ func (h *PaymentNotifyHandler) Notify(c *gin.Context) {
 		)
 	}
 
-	_ = h.notifyDAO.MarkProcessed(content.TransactionID)
+	// 业务成功后再写入流水（transaction_id 唯一索引保证后续重推幂等）
+	logRec := &model.PaymentNotifyLog{
+		OrderNo:       content.OutTradeNo,
+		TransactionID: content.TransactionID,
+		OrderType:     content.Attach,
+		RawBody:       rawStr,
+		Processed:     1,
+	}
+	if err := h.notifyDAO.Insert(logRec); err != nil && !isDupKey(err) {
+		h.logger.Error("写入回调流水失败（业务已处理）", zap.Error(err))
+		// 业务已处理成功，流水写入失败不再让微信重推，返回 OK
+	}
 	wxpayOK(c)
 }
 

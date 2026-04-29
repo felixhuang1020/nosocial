@@ -4,6 +4,7 @@ import (
 	"nosocial/internal/middleware"
 	"nosocial/internal/pkg/response"
 	"nosocial/internal/service"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -20,7 +21,12 @@ func (h *CouponHandler) MyCoupons(c *gin.Context) {
 	userID := middleware.GetWXUserID(c)
 	status := int8(-1)
 	if s := c.Query("status"); s != "" {
-		status = int8([]byte(s)[0] - '0')
+		v, err := strconv.Atoi(s)
+		if err != nil || v < 0 || v > 2 {
+			response.BadRequest(c, "status 参数不合法")
+			return
+		}
+		status = int8(v)
 	}
 	page := 1
 	size := 20

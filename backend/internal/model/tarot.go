@@ -42,11 +42,13 @@ func (TarotReading) TableName() string {
 }
 
 // TarotDrinkMapping 塔罗-酒水映射
+// 业务语义：每张牌 (CardNo) 每个朝向 (IsReversed) 只保留一条映射
+// 唯一键：(card_no, is_reversed)
 type TarotDrinkMapping struct {
 	ID             uint32    `gorm:"primaryKey;autoIncrement" json:"id"`
-	CardNo         int       `gorm:"not null;uniqueIndex:uk_card_drink_reversed" json:"card_no"`
-	DrinkID        uint64    `gorm:"not null;uniqueIndex:uk_card_drink_reversed" json:"drink_id"`
-	IsReversed     int8      `gorm:"type:smallint;not null;default:0;uniqueIndex:uk_card_drink_reversed" json:"is_reversed"`
+	CardNo         int       `gorm:"not null;uniqueIndex:uk_card_reversed,priority:1" json:"card_no"`
+	DrinkID        uint64    `gorm:"not null" json:"drink_id"`
+	IsReversed     int8      `gorm:"type:smallint;not null;default:0;uniqueIndex:uk_card_reversed,priority:2" json:"is_reversed"`
 	MatchScore     int       `gorm:"not null;default:100" json:"match_score"`
 	ReasonTemplate *string   `gorm:"type:varchar(255)" json:"reason_template,omitempty"`
 	CreatedAt      time.Time `gorm:"autoCreateTime" json:"created_at"`

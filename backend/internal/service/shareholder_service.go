@@ -196,6 +196,10 @@ func (s *ShareholderService) Withdraw(userID uint64, amount float64) error {
 	if amount <= 0 {
 		return errors.New("invalid amount")
 	}
+	// 上限校验：单次提现不得超过 100 万元，避免浮点异常和异常大额提取
+	if amount > 1000000 {
+		return errors.New("单次提现金额超出限制")
+	}
 	amount = round2(amount)
 
 	user, err := s.userDAO.GetByID(userID)

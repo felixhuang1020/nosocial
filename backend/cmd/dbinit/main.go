@@ -75,10 +75,15 @@ func main() {
 	}
 	log.Println("[3/4] 所有表结构已同步")
 
+	// 3.1) DDL 修正：tarot_drink_mappings 厂安性唯一索引从 (card_no,drink_id,is_reversed) 改为 (card_no,is_reversed)
+	migrateTarotMappingUniqueIndex(db)
+
 	// 3) 种子数据
 	seedAdmin(db)
 	seedCategories(db)
 	seedSettings(db)
+	seedTarotCards(db)
+	seedTarotDrinkMappings(db)
 
 	log.Println("[4/4] 种子数据植入完成")
 	log.Println("========================================")

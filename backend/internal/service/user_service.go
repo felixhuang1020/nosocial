@@ -112,6 +112,19 @@ func (s *UserService) GetProfile(userID uint64) (*model.User, error) {
 }
 
 func (s *UserService) UpdateBirthday(userID uint64, birthday string) error {
+	// 严格校验 YYYY-MM-DD 格式，避免写入非法字符串
+	t, err := time.Parse("2006-01-02", birthday)
+	if err != nil {
+		return fmt.Errorf("生日格式错误，应为 YYYY-MM-DD")
+	}
+	// 合理性校验：不允许未来日期，且不允许早于 1900-01-01
+	now := time.Now()
+	if t.After(now) {
+		return fmt.Errorf("生日不能是未来日期")
+	}
+	if t.Year() < 1900 {
+		return fmt.Errorf("生日年份不合法")
+	}
 	return s.userDAO.UpdateBirthday(userID, birthday)
 }
 

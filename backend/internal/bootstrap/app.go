@@ -33,6 +33,15 @@ func NewApp(configPath string) (*App, error) {
 	if cfg.JWT.WXSecret == "" {
 		return nil, fmt.Errorf("jwt.wx_secret 不能为空，请设置环境变量 NOSOCIAL_JWT_WX_SECRET")
 	}
+	// 强度校验：release 模式下 secret 长度至少 32 字节（避免弱 JWT 签名密钥）
+	if cfg.App.Mode == "release" {
+		if len(cfg.JWT.AdminSecret) < 32 {
+			return nil, fmt.Errorf("jwt.admin_secret 长度不足 32 字节，生产环境不允许弱密钥")
+		}
+		if len(cfg.JWT.WXSecret) < 32 {
+			return nil, fmt.Errorf("jwt.wx_secret 长度不足 32 字节，生产环境不允许弱密钥")
+		}
+	}
 
 	logger, err := InitLogger(&cfg.Log)
 	if err != nil {

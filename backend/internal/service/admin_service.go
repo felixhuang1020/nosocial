@@ -2,10 +2,13 @@ package service
 
 import (
 	"errors"
+	"nosocial/internal/bootstrap"
 	"nosocial/internal/dao"
 	"nosocial/internal/model"
 	"nosocial/internal/pkg/jwt"
 	"nosocial/internal/pkg/utils"
+
+	"go.uber.org/zap"
 )
 
 type AdminService struct {
@@ -58,8 +61,10 @@ func (s *AdminService) Login(req *AdminLoginReq) (*AdminLoginResp, error) {
 	// 异步更新最后登录时间（非关键操作，不影响登录结果）
 	go func() {
 		if err := s.adminDAO.UpdateLoginTime(admin.ID); err != nil {
-			// 非关键操作，登录已成功，仅日志记录
-			_ = err
+			if bootstrap.Log != nil {
+				bootstrap.Log.Warn("admin update login time failed",
+					zap.Uint32("admin_id", admin.ID), zap.Error(err))
+			}
 		}
 	}()
 

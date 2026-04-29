@@ -52,6 +52,11 @@ func (h *ReviewAdminHandler) Audit(c *gin.Context) {
 		response.BadRequest(c, "参数错误")
 		return
 	}
+	// 驳回理由长度限制，避免数据库字段溢出或恶意超长输入
+	if len(req.RejectReason) > 500 {
+		response.BadRequest(c, "驳回理由过长（上限 500 字）")
+		return
+	}
 
 	adminID := middleware.GetAdminID(c)
 	if err := h.reviewService.AuditReview(id, adminID, req.Pass, req.RejectReason); err != nil {

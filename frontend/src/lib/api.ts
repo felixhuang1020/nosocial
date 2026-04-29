@@ -357,6 +357,17 @@ export function updateTarotMapping(mappings: Partial<TarotMapping>[]) {
   });
 }
 
+export function getAdminTarotCards() {
+  return request<TarotCard[]>('/admin/tarot/cards');
+}
+
+export function updateTarotCard(id: number, imageUrl: string) {
+  return request<null>(`/admin/tarot/cards/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ image_url: imageUrl }),
+  });
+}
+
 // ==================== Tarot Cards (Public API) ====================
 export interface TarotCard {
   id: number;

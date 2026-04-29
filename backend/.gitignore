@@ -19,3 +19,6 @@ server
 # Test coverage
 *.out
 coverage.html
+
+# Local-only dev tools（勿入生产/镜像）
+cmd/genpwd/
