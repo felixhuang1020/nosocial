@@ -4,11 +4,26 @@ Page({
   data: {
     screenshots: [],
     reviewContent: '',
-    submitting: false
+    submitting: false,
+    canSubmit: false
   },
 
   onLoad() {
     // 页面加载
+  },
+
+  onUnload() {
+    // 标记页面已销毁，防止异步回调中调用 setData
+    this._destroyed = true;
+  },
+
+  // 计算提交按钮状态
+  updateSubmitState() {
+    const { screenshots, submitting } = this.data;
+    const hasValidImage = screenshots.some(s => s.url && !s.uploading && !s.error);
+    const hasUploading = screenshots.some(s => s.uploading);
+    const canSubmit = hasValidImage && !hasUploading && !submitting;
+    this.setData({ canSubmit });
   },
 
   // 选择图片（支持多张）
@@ -24,36 +39,47 @@ Page({
       mediaType: ['image'],
       sourceType: ['album', 'camera'],
       success: (res) => {
-        const newImages = res.tempFiles.map(f => ({
+        const newImages = res.tempFiles.map((f, idx) => ({
+          id: `img_${Date.now()}_${idx}`,
           url: '',
           tempFilePath: f.tempFilePath,
           uploading: true
         }));
 
-        const startIdx = this.data.screenshots.length;
         this.setData({
           screenshots: [...this.data.screenshots, ...newImages]
         });
+        this.updateSubmitState();
 
         // 逐个上传（OSS 直传）
         newImages.forEach((img, idx) => {
-          const realIdx = startIdx + idx;
+          const tempId = newImages[idx].id;
           uploadToOSS(img.tempFilePath, 'reviews').then(uploadRes => {
+            if (this._destroyed) return;
             const screenshots = [...this.data.screenshots];
-            if (screenshots[realIdx]) {
-              screenshots[realIdx] = {
+            const targetIdx = screenshots.findIndex(s => s.id === tempId);
+            if (targetIdx >= 0) {
+              screenshots[targetIdx] = {
+                ...screenshots[targetIdx],
                 url: uploadRes.url,
                 tempFilePath: '',
                 uploading: false
               };
               this.setData({ screenshots });
+              this.updateSubmitState();
             }
           }).catch(err => {
+            if (this._destroyed) return;
             const screenshots = [...this.data.screenshots];
-            if (screenshots[realIdx]) {
-              screenshots[realIdx].uploading = false;
-              screenshots[realIdx].error = true;
+            const targetIdx = screenshots.findIndex(s => s.id === tempId);
+            if (targetIdx >= 0) {
+              screenshots[targetIdx] = {
+                ...screenshots[targetIdx],
+                uploading: false,
+                error: true
+              };
               this.setData({ screenshots });
+              this.updateSubmitState();
             }
             wx.showToast({ title: (err && err.message) || '有图片上传失败', icon: 'none' });
           });
@@ -68,6 +94,52 @@ Page({
     const screenshots = [...this.data.screenshots];
     screenshots.splice(index, 1);
     this.setData({ screenshots });
+    this.updateSubmitState();
+  },
+
+  // 重试上传
+  retryUpload(e) {
+    const index = e.currentTarget.dataset.index;
+    const item = this.data.screenshots[index];
+    if (!item || !item.tempFilePath) {
+      // 如果没有本地文件路径了，就删除这个错误项
+      const screenshots = this.data.screenshots.filter((_, i) => i !== index);
+      this.setData({ screenshots });
+      this.updateSubmitState();
+      return;
+    }
+
+    const screenshots = [...this.data.screenshots];
+    const tempId = item.id;
+    screenshots[index] = { ...item, uploading: true, error: false };
+    this.setData({ screenshots });
+    this.updateSubmitState();
+
+    uploadToOSS(item.tempFilePath, 'reviews').then(uploadRes => {
+      if (this._destroyed) return;
+      const screenshots = [...this.data.screenshots];
+      const targetIdx = screenshots.findIndex(s => s.id === tempId);
+      if (targetIdx >= 0) {
+        screenshots[targetIdx] = {
+          ...screenshots[targetIdx],
+          url: uploadRes.url,
+          uploading: false,
+          error: false
+        };
+        this.setData({ screenshots });
+        this.updateSubmitState();
+      }
+    }).catch(err => {
+      if (this._destroyed) return;
+      const screenshots = [...this.data.screenshots];
+      const targetIdx = screenshots.findIndex(s => s.id === tempId);
+      if (targetIdx >= 0) {
+        screenshots[targetIdx] = { ...screenshots[targetIdx], uploading: false, error: true };
+        this.setData({ screenshots });
+        this.updateSubmitState();
+      }
+      wx.showToast({ title: '上传失败，请点击重试', icon: 'none' });
+    });
   },
 
   // 预览图片
@@ -102,6 +174,7 @@ Page({
     }
 
     this.setData({ submitting: true });
+    this.updateSubmitState();
 
     // 提交点评（支持多图 image_urls）
     const imageURLs = uploaded.map(s => s.url);
@@ -122,7 +195,9 @@ Page({
     }).catch(err => {
       wx.showToast({ title: '提交失败，请重试', icon: 'none' });
     }).finally(() => {
+      if (this._destroyed) return;
       this.setData({ submitting: false });
+      this.updateSubmitState();
     });
   }
 });

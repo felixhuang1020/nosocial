@@ -27,14 +27,8 @@ func (h *ShareholderHandler) Apply(c *gin.Context) {
 }
 
 func (h *ShareholderHandler) Pay(c *gin.Context) {
-	var req struct {
-		Amount float64 `json:"amount"`
-	}
-	if err := c.ShouldBindJSON(&req); err != nil {
-		response.BadRequest(c, "参数错误")
-		return
-	}
-
+	// 注意：股东注册费由后端配置项 Business.ShareholderFee 决定，
+	// 不接受客户端传入的金额，防止篡改支付金额。
 	userID := middleware.GetWXUserID(c)
 	// 先申请创建订单
 	order, err := h.shareholderService.ApplyShareholder(userID)
@@ -105,4 +99,20 @@ func (h *ShareholderHandler) Withdraw(c *gin.Context) {
 		return
 	}
 	response.Success(c, nil)
+}
+
+// Withdrawals 提现记录列表
+func (h *ShareholderHandler) Withdrawals(c *gin.Context) {
+	userID := middleware.GetWXUserID(c)
+	page := 1
+	size := 20
+	list, total, err := h.shareholderService.GetWithdrawals(userID, (page-1)*size, size)
+	if err != nil {
+		response.Error(c, 1, err.Error())
+		return
+	}
+	response.Success(c, map[string]interface{}{
+		"list":  list,
+		"total": total,
+	})
 }

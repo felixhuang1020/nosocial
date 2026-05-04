@@ -10,6 +10,7 @@ import (
 	"nosocial/internal/model"
 	"nosocial/internal/pkg/utils"
 	"nosocial/internal/pkg/wxpay"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -154,25 +155,35 @@ func (s *ShareholderService) PayCallback(orderNo, transactionID, rawNotify strin
 		}
 		changed = true
 
-		// 升级用户为股东（有效期一年）
-		inviteCode := utils.GenerateInviteCode()
+		// 升级用户为股东（有效期一年），邀请码碰撞最多重试 5 次
 		expireAt := time.Now().AddDate(1, 0, 0)
-		if err := tx.Model(&model.User{}).Where("id = ?", order.UserID).Updates(map[string]interface{}{
-			"is_shareholder":        1,
-			"shareholder_level":     1,
-			"register_fee_paid":     1,
-			"shareholder_expire_at": expireAt,
-			"invite_code":           inviteCode,
-		}).Error; err != nil {
-			return err
+		var lastErr error
+		for i := 0; i < 5; i++ {
+			inviteCode := utils.GenerateInviteCode()
+			updateErr := tx.Model(&model.User{}).Where("id = ?", order.UserID).Updates(map[string]interface{}{
+				"is_shareholder":        1,
+				"shareholder_level":     1,
+				"register_fee_paid":     1,
+				"shareholder_expire_at": expireAt,
+				"invite_code":           inviteCode,
+			}).Error
+			if updateErr == nil {
+				return nil
+			}
+			lastErr = updateErr
+			// 判断是否为 invite_code 唯一键冲突，否则直接返回错误
+			msg := updateErr.Error()
+			if !strings.Contains(msg, "duplicate key") && !strings.Contains(msg, "uk_invite_code") {
+				return updateErr
+			}
 		}
-		return nil
+		return fmt.Errorf("生成邀请码失败：%w", lastErr)
 	})
 	return changed, err
 }
 
-func (s *ShareholderService) GetShareholderList(offset, limit int) ([]*model.User, int64, error) {
-	return s.userDAO.ListShareholders(offset, limit)
+func (s *ShareholderService) GetShareholderList(offset, limit int, search string) ([]*model.User, int64, error) {
+	return s.userDAO.ListShareholders(offset, limit, search)
 }
 
 func (s *ShareholderService) GetProfile(userID uint64) (*model.User, error) {
@@ -191,6 +202,17 @@ func (s *ShareholderService) GetTeamCount(userID uint64) (int64, error) {
 	return s.userDAO.GetChildrenCount(userID)
 }
 
+// isActiveShareholder 判断用户是否为有效股东（已激活且未过期）
+func isActiveShareholder(u *model.User) bool {
+	if u == nil || u.IsShareholder != 1 {
+		return false
+	}
+	if u.ShareholderExpireAt != nil && u.ShareholderExpireAt.Before(time.Now()) {
+		return false
+	}
+	return true
+}
+
 // Withdraw 申请提现（原子扣余额 + 创建提现记录 + CAS 防超卖）
 func (s *ShareholderService) Withdraw(userID uint64, amount float64) error {
 	if amount <= 0 {
@@ -206,8 +228,8 @@ func (s *ShareholderService) Withdraw(userID uint64, amount float64) error {
 	if err != nil {
 		return err
 	}
-	if user.IsShareholder != 1 {
-		return errors.New("not a shareholder")
+	if !isActiveShareholder(user) {
+		return errors.New("股东身份无效或已过期")
 	}
 
 	return s.db.Transaction(func(tx *gorm.DB) error {
@@ -239,13 +261,80 @@ func (s *ShareholderService) GetWithdrawals(userID uint64, offset, limit int) ([
 	return s.withdrawalDAO.ListByUser(userID, offset, limit)
 }
 
+// ListAllWithdrawals 管理端：按状态筛选提现列表
+func (s *ShareholderService) ListAllWithdrawals(status int8, offset, limit int) ([]*model.Withdrawal, int64, error) {
+	return s.withdrawalDAO.ListAll(status, offset, limit)
+}
+
+// ApproveWithdrawal 管理端审核通过（仅更新状态，不返还余额）
+// 实际资金打款由人工或您系统外部完成。基于 CAS 保证幂等。
+func (s *ShareholderService) ApproveWithdrawal(id uint64) error {
+	if id == 0 {
+		return errors.New("invalid id")
+	}
+	// 审批前校验提现人当前仍为股东（防止被降级/过期后仍支付）
+	w, err := s.withdrawalDAO.GetByID(id)
+	if err != nil {
+		return err
+	}
+	u, err := s.userDAO.GetByID(w.UserID)
+	if err != nil {
+		return err
+	}
+	if !isActiveShareholder(u) {
+		return errors.New("用户股东身份无效或已过期，应改为拒绝并退款")
+	}
+	affected, err := s.withdrawalDAO.ApproveCAS(id)
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return errors.New("记录不存在或状态已改变")
+	}
+	return nil
+}
+
+// RejectWithdrawal 管理端审核拒绝：事务内返还余额 + 置拒绝状态
+func (s *ShareholderService) RejectWithdrawal(id uint64, reason string) error {
+	if id == 0 {
+		return errors.New("invalid id")
+	}
+	if len(reason) > 255 {
+		reason = reason[:255]
+	}
+	return s.db.Transaction(func(tx *gorm.DB) error {
+		w, err := s.withdrawalDAO.GetByID(id)
+		if err != nil {
+			return err
+		}
+		if w.Status != 0 {
+			return errors.New("记录不存在或状态已改变")
+		}
+		// CAS 置拒绝
+		affected, err := s.withdrawalDAO.RejectCAS(tx, id, reason)
+		if err != nil {
+			return err
+		}
+		if affected == 0 {
+			return errors.New("记录不存在或状态已改变")
+		}
+		// 退还余额
+		if err := tx.Model(&model.User{}).Where("id = ?", w.UserID).
+			Update("balance", gorm.Expr("balance + ?", w.Amount)).Error; err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
 // CalculateCommission 在订单支付成功后调用：原子创建佣金记录 + 增加股东累计收益
 func (s *ShareholderService) CalculateCommission(order *model.DrinkOrder) error {
 	if order == nil || order.ShareholderID == nil || *order.ShareholderID == 0 {
 		return nil
 	}
 	shareholder, err := s.userDAO.GetByID(*order.ShareholderID)
-	if err != nil || shareholder.IsShareholder != 1 {
+	if err != nil || !isActiveShareholder(shareholder) {
+		// 股东身份已过期/被取消，不再结算佣金
 		return nil
 	}
 

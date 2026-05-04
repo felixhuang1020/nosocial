@@ -39,11 +39,11 @@ const request = (options) => {
           wx.showToast({ 
             title: '登录已过期，请重新登录', 
             icon: 'none',
-            duration: 2000
+            duration: 1500,
+            complete: () => {
+              wx.switchTab({ url: '/pages/profile/profile' });
+            }
           });
-          setTimeout(() => {
-            wx.switchTab({ url: '/pages/profile/profile' });
-          }, 2000);
           return reject({ code: 401, message: '登录已过期' });
         }
         
@@ -173,7 +173,9 @@ const uploadToOSS = (filePath, dir = 'reviews') => {
         success: (res) => {
           if (res.statusCode === 200 || res.statusCode === 204) {
             // PostObject 不支持通过 form 设置 Content-Disposition，上传成功后异步修复
-            put('/wx/upload/inline', { key: sig.key }).catch(() => {});
+            put('/wx/upload/inline', { key: sig.key }).catch(err => {
+              console.warn('[OSS] 修复 Content-Disposition 失败:', err);
+            });
             resolve({ url: `${sig.host}/${sig.key}`, key: sig.key });
           } else {
             const body = (res.data || '').toString().slice(0, 120);

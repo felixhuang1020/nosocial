@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { FilterBar, FilterTabs } from '@/components/shared/FilterBar';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -12,13 +12,20 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { getReviewList, auditReview, type Review as APIReview } from '@/lib/api';
+import { isValidImageUrl } from '@/lib/imageValidator';
+import { REVIEW_STATUS } from '@/lib/constants';
+import { Pagination } from '@/components/shared/Pagination';
 import { useToastStore } from '@/stores/toastStore';
 import { CheckCircle, XCircle, Eye } from 'lucide-react';
 
 export default function Reviews() {
   const { addToast } = useToastStore();
   const [reviews, setReviews] = useState<APIReview[]>([]);
-  const [filterStatus, setFilterStatus] = useState<string | number>(0);
+  const [filterStatus, setFilterStatus] = useState<string | number>(REVIEW_STATUS.PENDING);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const pageSize = 20;
+  const [loading, setLoading] = useState(true);
   const [rejectDialog, setRejectDialog] = useState<{ open: boolean; review: APIReview | null }>({
     open: false,
     review: null,
@@ -27,24 +34,37 @@ export default function Reviews() {
   const [lightboxOpen, setLightboxOpen] = useState(false);
   const [lightboxImage, setLightboxImage] = useState('');
 
-  useEffect(() => {
-    loadReviews();
+  // status tab 切换时重置页码
+  const handleStatusChange = useCallback((val: string | number) => {
+    setFilterStatus(val);
+    setPage(1);
   }, []);
 
-  async function loadReviews() {
-    const res = await getReviewList(1, 100);
-    if (res.code === 0) setReviews(res.data.list);
-  }
+  // 数据获取
+  useEffect(() => {
+    setLoading(true);
+    const status = filterStatus === 'all' ? undefined : Number(filterStatus);
+    getReviewList(page, pageSize, status).then((res) => {
+      if (res.code === 0) {
+        setReviews(res.data.list || []);
+        setTotal(res.data.total || 0);
+      }
+    }).finally(() => setLoading(false));
+  }, [page, filterStatus]);
 
-  const filtered = useMemo(() => {
-    if (filterStatus === 'all') return reviews;
-    return reviews.filter((r) => r.status === Number(filterStatus));
-  }, [reviews, filterStatus]);
+  const reloadCurrentPage = async () => {
+    const status = filterStatus === 'all' ? undefined : Number(filterStatus);
+    const res = await getReviewList(page, pageSize, status);
+    if (res.code === 0) {
+      setReviews(res.data.list || []);
+      setTotal(res.data.total || 0);
+    }
+  };
 
   const handleApprove = async (review: APIReview) => {
     try {
       await auditReview(review.id, true);
-      await loadReviews();
+      await reloadCurrentPage();
       addToast({ type: 'success', message: '点评已通过，优惠券已发放' });
     } catch {
       addToast({ type: 'error', message: '操作失败' });
@@ -59,7 +79,7 @@ export default function Reviews() {
     }
     try {
       await auditReview(rejectDialog.review.id, false, rejectReason);
-      await loadReviews();
+      await reloadCurrentPage();
       addToast({ type: 'success', message: '点评已拒绝' });
     } catch {
       addToast({ type: 'error', message: '操作失败' });
@@ -80,18 +100,26 @@ export default function Reviews() {
       <FilterBar>
         <FilterTabs
           options={[
-            { value: 'all', label: `全部 (${reviews.length})` },
-            { value: 0, label: `待审核 (${reviews.filter((r) => r.status === 0).length})` },
-            { value: 1, label: `已通过 (${reviews.filter((r) => r.status === 1).length})` },
-            { value: 2, label: `已拒绝 (${reviews.filter((r) => r.status === 2).length})` },
+            { value: 'all', label: '全部' },
+            { value: REVIEW_STATUS.PENDING, label: '待审核' },
+            { value: REVIEW_STATUS.APPROVED, label: '已通过' },
+            { value: REVIEW_STATUS.REJECTED, label: '已拒绝' },
           ]}
           value={filterStatus}
-          onChange={setFilterStatus}
+          onChange={handleStatusChange}
         />
       </FilterBar>
 
       <div className="space-y-4">
-        {filtered.map((review) => (
+        {loading ? (
+          <div className="py-16 text-center text-gray-400">加载中...</div>
+        ) : reviews.length === 0 ? (
+          <div className="py-16 text-center">
+            <p className="text-text-muted text-sm">暂无点评记录</p>
+          </div>
+        ) : (
+          <>
+          {reviews.map((review) => (
           <Card key={review.id} className="bg-surface-secondary border-gray-100">
             <CardContent className="p-5">
               <div className="flex items-center justify-between mb-4">
@@ -109,9 +137,10 @@ export default function Reviews() {
 
               {/* Screenshots (多图) */}
               {(() => {
-                const urls = (review.image_urls && review.image_urls.length > 0)
+                const rawUrls = (review.image_urls && review.image_urls.length > 0)
                   ? review.image_urls
                   : (review.screenshot_url ? [review.screenshot_url] : []);
+                const urls = rawUrls.filter(isValidImageUrl);
                 if (urls.length === 0) return null;
                 if (urls.length === 1) {
                   return (
@@ -160,7 +189,7 @@ export default function Reviews() {
               )}
 
               {/* Actions */}
-              {review.status === 0 && (
+              {review.status === REVIEW_STATUS.PENDING && (
                 <div className="flex items-center justify-end gap-3">
                   <Button
                     variant="outline"
@@ -180,27 +209,25 @@ export default function Reviews() {
                 </div>
               )}
 
-              {review.status === 1 && review.coupon_id && (
+              {review.status === REVIEW_STATUS.APPROVED && review.coupon_id && (
                 <p className="text-xs text-green-500 text-right">
                   已发放优惠券 (ID: {review.coupon_id})
                 </p>
               )}
 
-              {review.status === 2 && review.reject_reason && (
+              {review.status === REVIEW_STATUS.REJECTED && review.reject_reason && (
                 <p className="text-xs text-red-400 text-right">
                   拒绝原因: {review.reject_reason}
                 </p>
               )}
             </CardContent>
           </Card>
-        ))}
-
-        {filtered.length === 0 && (
-          <div className="py-16 text-center">
-            <p className="text-text-muted text-sm">暂无点评记录</p>
-          </div>
+          ))}
+          </>
         )}
       </div>
+
+      <Pagination page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
 
       {/* Reject Dialog */}
       <Dialog open={rejectDialog.open} onOpenChange={(open) => { if (!open) setRejectReason(''); setRejectDialog({ ...rejectDialog, open }); }}>
@@ -215,10 +242,14 @@ export default function Reviews() {
             <Textarea
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
+              maxLength={500}
               placeholder="如：截图不清晰、无法识别等"
               rows={3}
               className="bg-background border-border text-text-primary placeholder:text-text-muted"
             />
+            <div className={`text-xs mt-1 text-right ${rejectReason.length > 450 ? 'text-red-500' : 'text-gray-400'}`}>
+              {rejectReason.length}/500
+            </div>
             <div className="flex justify-end gap-3">
               <Button
                 variant="outline"

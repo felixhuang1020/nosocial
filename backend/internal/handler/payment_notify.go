@@ -3,9 +3,11 @@ package handler
 import (
 	"encoding/json"
 	"errors"
+	"math"
 	"net/http"
 	"strings"
 
+	"nosocial/config"
 	"nosocial/internal/dao"
 	"nosocial/internal/model"
 	"nosocial/internal/pkg/logx"
@@ -105,6 +107,15 @@ func (h *PaymentNotifyHandler) Notify(c *gin.Context) {
 			content.OutTradeNo, content.TransactionID, rawStr, content.Amount.PayerTotal,
 		)
 		if err != nil {
+			// 金额不匹配是业务异常不是系统错误，返 OK 让微信停止重推，仅告警
+			if strings.Contains(err.Error(), "amount mismatch") {
+				h.logger.Warn("酒水订单金额不一致，忽略重推",
+					zap.String("out_trade_no", content.OutTradeNo),
+					zap.Error(err),
+				)
+				wxpayOK(c)
+				return
+			}
 			h.logger.Error("酒水订单回调处理失败",
 				zap.String("out_trade_no", content.OutTradeNo),
 				zap.Error(err),
@@ -123,9 +134,30 @@ func (h *PaymentNotifyHandler) Notify(c *gin.Context) {
 			}
 		}
 	case "shareholder":
+		// 前置金额校验：若金额与当前配置/订单不符，视为异常事件，
+		// 返回 OK 让微信停止重推（重推永远不会成功），并记录告警供人工排查。
+		expectedFen := int64(math.Round(config.C.Business.ShareholderFee * 100))
+		if content.Amount.PayerTotal > 0 && expectedFen > 0 && content.Amount.PayerTotal != expectedFen {
+			h.logger.Warn("股东回调金额与配置不符，忽略处理（人工告警）",
+				zap.String("out_trade_no", content.OutTradeNo),
+				zap.Int64("expect_fen", expectedFen),
+				zap.Int64("got_fen", content.Amount.PayerTotal),
+			)
+			wxpayOK(c)
+			return
+		}
 		if _, err := h.shareholderService.PayCallback(
 			content.OutTradeNo, content.TransactionID, rawStr, content.Amount.PayerTotal,
 		); err != nil {
+			// 金额不匹配是业务异常不是系统错误，不应让微信重推
+			if strings.Contains(err.Error(), "amount mismatch") {
+				h.logger.Warn("股东订单金额不一致，忽略重推",
+					zap.String("out_trade_no", content.OutTradeNo),
+					zap.Error(err),
+				)
+				wxpayOK(c)
+				return
+			}
 			h.logger.Error("股东订单回调处理失败",
 				zap.String("out_trade_no", content.OutTradeNo),
 				zap.Error(err),
@@ -134,10 +166,14 @@ func (h *PaymentNotifyHandler) Notify(c *gin.Context) {
 			return
 		}
 	default:
-		h.logger.Warn("未知 attach，忽略处理",
+		// 未知 attach 视为异常事件：不写流水，记录 Error 供人工排查，
+		// 同时返 OK 避免微信无限重推（重推仍会到达这里）。
+		h.logger.Error("未知 attach，拒绝处理",
 			zap.String("out_trade_no", content.OutTradeNo),
 			zap.String("attach", content.Attach),
 		)
+		wxpayOK(c)
+		return
 	}
 
 	// 业务成功后再写入流水（transaction_id 唯一索引保证后续重推幂等）

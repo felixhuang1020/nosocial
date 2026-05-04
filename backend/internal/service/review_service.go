@@ -32,6 +32,13 @@ func (s *ReviewService) SubmitReview(userID uint64, imageURLs []string, content 
 	if len(imageURLs) == 0 {
 		return nil, errors.New("请上传至少一张截图")
 	}
+
+	// 检查用户是否已有待审核或已通过的评价
+	existing, err := s.reviewDAO.GetActiveByUser(userID)
+	if err == nil && existing != nil {
+		return nil, errors.New("您已提交过评价，请等待审核结果")
+	}
+
 	review := &model.Review{
 		UserID:        userID,
 		ScreenshotURL: imageURLs[0], // 向后兼容：单图字段写入首张

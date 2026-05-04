@@ -79,7 +79,7 @@ func (s *AdminService) Login(req *AdminLoginReq) (*AdminLoginResp, error) {
 func (s *AdminService) GetDashboardStats() (map[string]interface{}, error) {
 	todayAmount, todayCount, _ := s.orderDAO.GetTodayStats()
 
-	_, newShareholderCount, _ := s.userDAO.ListShareholders(0, 9999)
+	_, newShareholderCount, _ := s.userDAO.ListShareholders(0, 9999, "")
 
 	_, pendingReviewCount, _ := s.reviewDAO.List(0, 0, 9999)
 

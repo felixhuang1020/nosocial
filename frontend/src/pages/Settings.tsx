@@ -36,7 +36,7 @@ export default function Settings() {
   const [settings, setSettings] = useState<AdminSettings>(defaultSettings);
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
 
   useEffect(() => {
     loadSettings();
@@ -50,7 +50,8 @@ export default function Settings() {
         setSettings({ ...defaultSettings, ...res.data });
       }
     } catch (e) {
-      console.error('Settings load error:', e);
+      const msg = e instanceof Error ? e.message : '加载设置失败';
+      addToast({ type: 'error', message: msg });
     } finally {
       setLoading(false);
     }

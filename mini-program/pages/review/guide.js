@@ -1,6 +1,8 @@
+const { DIANPING_URL } = require('../../utils/constants');
+
 Page({
   data: {
-    dianpingUrl: 'https://m.dianping.com/shop/NoSocialBar'
+    dianpingUrl: DIANPING_URL
   },
 
   onLoad() {

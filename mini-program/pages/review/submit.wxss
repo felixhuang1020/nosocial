@@ -128,8 +128,22 @@
   bottom: 0;
   background: rgba(0, 0, 0, 0.3);
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+}
+
+.error-retry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.error-text {
+  font-size: 20rpx;
+  color: #ff4d4f;
+  margin-top: 4rpx;
 }
 
 .delete-btn {

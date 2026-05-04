@@ -16,9 +16,11 @@ import {
   ArrowRight,
   CheckCircle,
 } from 'lucide-react';
+import { useToastStore } from '@/stores/toastStore';
 
 export default function Dashboard() {
   const navigate = useNavigate();
+  const addToast = useToastStore((s) => s.addToast);
   const [stats, setStats] = useState({
     today_amount: 0,
     today_order_count: 0,
@@ -28,7 +30,7 @@ export default function Dashboard() {
   const [revenueTrend, setRevenueTrend] = useState<RevenueDataPoint[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [_loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
@@ -47,7 +49,8 @@ export default function Dashboard() {
         if (orderRes.code === 0) setOrders(orderRes.data.list);
         if (reviewRes.code === 0) setReviews(reviewRes.data.list);
       } catch (e) {
-        console.error('Dashboard load error:', e);
+        const msg = e instanceof Error ? e.message : '加载数据失败';
+        addToast({ type: 'error', message: msg });
       } finally {
         setLoading(false);
       }
@@ -106,9 +109,9 @@ export default function Dashboard() {
       </div>
 
       {/* Bottom Lists */}
-      <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
         {/* Recent Orders */}
-        <Card className="lg:col-span-3 bg-surface-secondary border-gray-100">
+        <Card className="md:col-span-1 lg:col-span-3 bg-surface-secondary border-gray-100">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg text-text-primary">最近订单</CardTitle>
@@ -154,7 +157,7 @@ export default function Dashboard() {
         </Card>
 
         {/* Pending Reviews */}
-        <Card className="lg:col-span-2 bg-surface-secondary border-gray-100">
+        <Card className="md:col-span-1 lg:col-span-2 bg-surface-secondary border-gray-100">
           <CardHeader className="pb-3">
             <div className="flex items-center justify-between">
               <CardTitle className="text-lg text-text-primary">待审核点评</CardTitle>

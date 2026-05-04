@@ -68,12 +68,16 @@ func (d *UserDAO) UpdateTotalEarning(userID uint64, amount float64) error {
 	return d.db.Model(&model.User{}).Where("id = ?", userID).Update("total_earning", gorm.Expr("total_earning + ?", amount)).Error
 }
 
-func (d *UserDAO) ListShareholders(offset, limit int) ([]*model.User, int64, error) {
+func (d *UserDAO) ListShareholders(offset, limit int, search string) ([]*model.User, int64, error) {
 	var users []*model.User
 	var total int64
-	query := d.db.Where("is_shareholder = ?", 1)
-	query.Model(&model.User{}).Count(&total)
-	err := query.Offset(offset).Limit(limit).Find(&users).Error
+	query := d.db.Model(&model.User{}).Where("is_shareholder = ?", 1)
+	if search != "" {
+		like := "%" + search + "%"
+		query = query.Where("nickname ILIKE ? OR phone LIKE ?", like, like)
+	}
+	query.Count(&total)
+	err := query.Offset(offset).Limit(limit).Order("id DESC").Find(&users).Error
 	return users, total, err
 }
 
@@ -95,11 +99,16 @@ func (d *UserDAO) GetByBirthday(monthDay string) ([]*model.User, error) {
 	return users, err
 }
 
-func (d *UserDAO) List(offset, limit int) ([]*model.User, int64, error) {
+func (d *UserDAO) List(offset, limit int, search string) ([]*model.User, int64, error) {
 	var users []*model.User
 	var total int64
-	d.db.Model(&model.User{}).Count(&total)
-	err := d.db.Offset(offset).Limit(limit).Order("id DESC").Find(&users).Error
+	query := d.db.Model(&model.User{})
+	if search != "" {
+		like := "%" + search + "%"
+		query = query.Where("nickname ILIKE ? OR phone LIKE ?", like, like)
+	}
+	query.Count(&total)
+	err := query.Offset(offset).Limit(limit).Order("id DESC").Find(&users).Error
 	return users, total, err
 }
 

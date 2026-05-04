@@ -9,10 +9,14 @@
   <view class="upload-section">
     <view class="upload-label">点评截图 <text class="required">*</text></view>
     <view class="image-grid">
-      <view class="image-item" wx:for="{{screenshots}}" wx:key="index">
+      <view class="image-item" wx:for="{{screenshots}}" wx:key="id">
         <image class="grid-image" src="{{item.url || item.tempFilePath}}" mode="aspectFill" bindtap="previewImage" data-index="{{index}}" />
-        <view class="image-mask" wx:if="{{item.uploading}}">
-          <t-loading theme="circular" size="32rpx" />
+        <view class="image-mask" wx:if="{{item.uploading || item.error}}">
+          <t-loading wx:if="{{item.uploading}}" theme="circular" size="32rpx" />
+          <view wx:if="{{item.error}}" class="error-retry" bindtap="retryUpload" data-index="{{index}}">
+            <t-icon name="refresh" size="40rpx" color="#ff4d4f" />
+            <text class="error-text">点击重试</text>
+          </view>
         </view>
         <view class="delete-btn" bindtap="deleteImage" data-index="{{index}}">
           <t-icon name="close" size="24rpx" color="#fff" />
@@ -48,7 +52,7 @@
       size="large"
       bindtap="submitReview"
       loading="{{submitting}}"
-      disabled="{{screenshots.length === 0}}"
+      disabled="{{!canSubmit}}"
     >
       提交审核
     </t-button>

@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { FilterBar } from '@/components/shared/FilterBar';
 import { StatCard } from '@/components/shared/StatCard';
@@ -13,48 +13,67 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getShareholderList, getShareholderEarnings, getShareholderTeam, type User } from '@/lib/api';
+import { getShareholderList, getShareholderEarnings, getShareholderTeam, type User, type EarningsRecord } from '@/lib/api';
+import { Pagination } from '@/components/shared/Pagination';
 import { Users, DollarSign, Award, Eye, GitBranch } from 'lucide-react';
 
 export default function Shareholders() {
   const [searchQuery, setSearchQuery] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [shareholders, setShareholders] = useState<User[]>([]);
-  const [selectedShareholder, setSelectedShareholder] = useState<User | null>(null);
-  const [showEarnings, setShowEarnings] = useState(false);
-  const [showTeam, setShowTeam] = useState(false);
-  const [earningsData, setEarningsData] = useState<unknown[]>([]);
-  const [teamData, setTeamData] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
+  const pageSize = 20;
+  const [dialog, setDialog] = useState<{
+    type: null | 'earnings' | 'team';
+    shareholder: User | null;
+    data: EarningsRecord[] | User[];
+  }>({
+    type: null,
+    shareholder: null,
+    data: [],
+  });
 
+  // debounce 搜索
   useEffect(() => {
-    loadShareholders();
-  }, []);
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1);
+    }, 500);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-  async function loadShareholders() {
-    const res = await getShareholderList(1, 100);
-    if (res.code === 0) setShareholders(res.data.list);
-  }
-
-  const filtered = useMemo(() => {
-    return shareholders.filter((s) =>
-      !searchQuery ||
-      (s.nickname && s.nickname.toLowerCase().includes(searchQuery.toLowerCase())) ||
-      (s.invite_code && s.invite_code.toLowerCase().includes(searchQuery.toLowerCase()))
-    );
-  }, [shareholders, searchQuery]);
+  // 数据获取
+  useEffect(() => {
+    setLoading(true);
+    getShareholderList(page, pageSize, debouncedSearch || undefined).then((res) => {
+      if (res.code === 0) {
+        setShareholders(res.data.list || []);
+        setTotal(res.data.total || 0);
+      }
+    }).finally(() => setLoading(false));
+  }, [page, debouncedSearch]);
 
   const openEarnings = async (sh: User) => {
-    setSelectedShareholder(sh);
-    setShowEarnings(true);
     const res = await getShareholderEarnings(sh.id, 1, 100);
-    if (res.code === 0) setEarningsData(res.data.list);
+    setDialog({
+      type: 'earnings',
+      shareholder: sh,
+      data: res.code === 0 ? (res.data?.list || []) : [],
+    });
   };
 
   const openTeam = async (sh: User) => {
-    setSelectedShareholder(sh);
-    setShowTeam(true);
     const res = await getShareholderTeam(sh.id);
-    if (res.code === 0) setTeamData(res.data);
+    setDialog({
+      type: 'team',
+      shareholder: sh,
+      data: res.code === 0 ? (res.data || []) : [],
+    });
   };
+
+  const closeDialog = () => setDialog({ type: null, shareholder: null, data: [] });
 
   return (
     <div className="space-y-6">
@@ -62,7 +81,7 @@ export default function Shareholders() {
 
       {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard title="总股东数" value={shareholders.length} icon={Users} />
+        <StatCard title="总股东数" value={total} icon={Users} />
         <StatCard title="本月新增" value={0} icon={Award} />
         <StatCard title="待结算佣金" value={0} prefix="¥" icon={DollarSign} />
         <StatCard title="总发放佣金" value={0} prefix="¥" icon={DollarSign} />
@@ -76,6 +95,13 @@ export default function Shareholders() {
 
       <Card className="bg-surface-secondary border-gray-100">
         <CardContent className="p-0">
+          {loading ? (
+            <div className="py-16 text-center text-gray-400">加载中...</div>
+          ) : shareholders.length === 0 ? (
+            <div className="py-16 text-center">
+              <p className="text-text-muted text-sm">暂无股东数据</p>
+            </div>
+          ) : (
           <div className="overflow-x-auto">
             <Table>
               <TableHeader>
@@ -89,7 +115,7 @@ export default function Shareholders() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {filtered.map((sh) => (
+              {shareholders.map((sh) => (
                   <TableRow key={sh.id} className="border-gray-100 hover:bg-primary/[0.04] transition-colors">
                     <TableCell>
                       <div className="flex items-center gap-3">
@@ -128,15 +154,18 @@ export default function Shareholders() {
               </TableBody>
             </Table>
           </div>
+          )}
         </CardContent>
       </Card>
 
+      <Pagination page={page} total={total} pageSize={pageSize} onPageChange={setPage} />
+
       {/* Earnings Dialog */}
-      <Dialog open={showEarnings} onOpenChange={setShowEarnings}>
+      <Dialog open={dialog.type === 'earnings'} onOpenChange={() => closeDialog()}>
         <DialogContent className="max-w-[640px] bg-surface-secondary border-gray-100">
           <DialogHeader>
             <DialogTitle className="text-text-primary">
-              {selectedShareholder?.nickname || '股东'} 的收益明细
+              {dialog.shareholder?.nickname || '股东'} 的收益明细
             </DialogTitle>
           </DialogHeader>
           <div className="overflow-x-auto">
@@ -150,7 +179,7 @@ export default function Shareholders() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {earningsData.map((record: any) => (
+                {(dialog.type === 'earnings' ? (dialog.data as EarningsRecord[]) : []).map((record: EarningsRecord) => (
                   <TableRow key={record.id} className="border-gray-100">
                     <TableCell className="text-sm text-text-primary">{record.type || '-'}</TableCell>
                     <TableCell className="text-sm font-mono text-gold">¥{Number(record.amount || 0).toFixed(2)}</TableCell>
@@ -162,7 +191,7 @@ export default function Shareholders() {
                     <TableCell className="text-sm text-text-muted">{record.created_at || '-'}</TableCell>
                   </TableRow>
                 ))}
-                {earningsData.length === 0 && (
+                {dialog.type === 'earnings' && dialog.data.length === 0 && (
                   <TableRow>
                     <TableCell colSpan={4} className="text-center py-8 text-text-muted text-sm">暂无收益记录</TableCell>
                   </TableRow>
@@ -174,17 +203,17 @@ export default function Shareholders() {
       </Dialog>
 
       {/* Team Dialog */}
-      <Dialog open={showTeam} onOpenChange={setShowTeam}>
+      <Dialog open={dialog.type === 'team'} onOpenChange={() => closeDialog()}>
         <DialogContent className="max-w-[480px] bg-surface-secondary border-gray-100">
           <DialogHeader>
             <DialogTitle className="text-text-primary">
-              {selectedShareholder?.nickname} 的团队 ({teamData.length}人)
+              {dialog.shareholder?.nickname} 的团队 ({dialog.type === 'team' ? dialog.data.length : 0}人)
             </DialogTitle>
           </DialogHeader>
           <div className="py-2">
-            {teamData.length > 0 ? (
+            {dialog.type === 'team' && dialog.data.length > 0 ? (
               <div className="space-y-2">
-                {teamData.map((member) => (
+                {(dialog.data as User[]).map((member) => (
                   <div key={member.id} className="flex items-center gap-3 p-2 rounded-lg bg-background">
                     <div className="w-8 h-8 rounded-full bg-gold-dim flex items-center justify-center shrink-0">
                       <span className="text-xs font-medium text-gold">{(member.nickname || '?').charAt(0)}</span>

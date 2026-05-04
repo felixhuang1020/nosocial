@@ -60,6 +60,9 @@ const STORAGE_KEYS = {
   SETTINGS: 'settings'
 };
 
+// 大众点评 URL
+const DIANPING_URL = 'https://m.dianping.com/shop/NoSocialBar';
+
 // 页面路径
 const PAGES = {
   HOME: '/pages/index/index',
@@ -89,5 +92,6 @@ module.exports = {
   REVIEW_STATUS,
   PAY_TYPES,
   STORAGE_KEYS,
-  PAGES
+  PAGES,
+  DIANPING_URL
 };

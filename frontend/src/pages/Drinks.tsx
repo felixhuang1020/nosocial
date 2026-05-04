@@ -44,6 +44,7 @@ import {
 } from '@/lib/api';
 import { Plus, Pencil, Trash2, Wine, LayoutGrid, List } from 'lucide-react';
 import { useToastStore } from '@/stores/toastStore';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 
 const emptyDrink: Partial<Drink> = {
   name: '',
@@ -61,6 +62,15 @@ const emptyDrink: Partial<Drink> = {
   status: 1,
 };
 
+function validateDrink(drink: Partial<Drink>): string | null {
+  if (!drink.name?.trim()) return '请输入酒水名称';
+  if (!drink.price || drink.price <= 0) return '价格必须大于 0';
+  if (!drink.category_id) return '请选择分类';
+  if (drink.alcohol !== undefined && drink.alcohol !== null && (drink.alcohol < 0 || drink.alcohol > 100))
+    return '酒精度范围 0-100';
+  return null;
+}
+
 export default function Drinks() {
   const { addToast } = useToastStore();
   const [searchQuery, setSearchQuery] = useState('');
@@ -73,6 +83,13 @@ export default function Drinks() {
   const [editingDrink, setEditingDrink] = useState<Partial<Drink> | null>(null);
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [editingCategory, setEditingCategory] = useState<Partial<DrinkCategory> | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [deleteConfirm, setDeleteConfirm] = useState<{
+    open: boolean;
+    type: 'drink' | 'category';
+    id: number | null;
+    name: string;
+  }>({ open: false, type: 'drink', id: null, name: '' });
 
   useEffect(() => {
     loadDrinks();
@@ -80,8 +97,12 @@ export default function Drinks() {
   }, []);
 
   async function loadDrinks() {
-    const res = await getDrinkList(1, 100);
-    if (res.code === 0) setDrinks(res.data.list);
+    try {
+      const res = await getDrinkList(1, 100);
+      if (res.code === 0) setDrinks(res.data.list);
+    } finally {
+      setLoading(false);
+    }
   }
 
   async function loadCategories() {
@@ -109,16 +130,17 @@ export default function Drinks() {
   };
 
   const handleSave = async () => {
-    if (!editingDrink?.name) {
-      addToast({ type: 'error', message: '请输入酒水名称' });
+    const err = validateDrink(editingDrink!);
+    if (err) {
+      addToast({ type: 'error', message: err });
       return;
     }
     try {
-      if (editingDrink.id) {
-        await updateDrink(editingDrink.id, editingDrink);
+      if (editingDrink!.id) {
+        await updateDrink(editingDrink!.id, editingDrink!);
         addToast({ type: 'success', message: '酒水已更新' });
       } else {
-        await createDrink(editingDrink);
+        await createDrink(editingDrink!);
         addToast({ type: 'success', message: '酒水已添加' });
       }
       await loadDrinks();
@@ -129,11 +151,26 @@ export default function Drinks() {
     }
   };
 
-  const handleDelete = async (id: number) => {
+  const handleDelete = async (id: number, name: string) => {
+    setDeleteConfirm({ open: true, type: 'drink', id, name });
+  };
+
+  const handleDeleteCategory = async (id: number, name: string) => {
+    setDeleteConfirm({ open: true, type: 'category', id, name });
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteConfirm.id) return;
     try {
-      await deleteDrink(id);
-      await loadDrinks();
-      addToast({ type: 'success', message: '酒水已删除' });
+      if (deleteConfirm.type === 'drink') {
+        await deleteDrink(deleteConfirm.id);
+        await loadDrinks();
+        addToast({ type: 'success', message: '酒水已删除' });
+      } else {
+        await deleteCategory(deleteConfirm.id);
+        await loadCategories();
+        addToast({ type: 'success', message: '分类已删除' });
+      }
     } catch {
       addToast({ type: 'error', message: '删除失败' });
     }
@@ -169,17 +206,6 @@ export default function Drinks() {
       setEditingCategory(null);
     } catch {
       addToast({ type: 'error', message: '操作失败' });
-    }
-  };
-
-  const handleDeleteCategory = async (id: number) => {
-    if (!confirm('确定要删除该分类吗？')) return;
-    try {
-      await deleteCategory(id);
-      await loadCategories();
-      addToast({ type: 'success', message: '分类已删除' });
-    } catch {
-      addToast({ type: 'error', message: '删除失败' });
     }
   };
 
@@ -236,7 +262,14 @@ export default function Drinks() {
       {viewMode === 'table' ? (
         <Card className="bg-surface-secondary border-gray-100">
           <CardContent className="p-0">
-            <div className="overflow-x-auto">
+            {loading ? (
+              <div className="py-16 text-center text-gray-400">加载中...</div>
+            ) : filtered.length === 0 ? (
+              <div className="py-16 text-center">
+                <p className="text-text-muted text-sm">暂无酒水数据</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow className="border-border hover:bg-transparent">
@@ -293,7 +326,7 @@ export default function Drinks() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            onClick={() => handleDelete(drink.id)}
+                            onClick={() => handleDelete(drink.id, drink.name)}
                             className="h-8 w-8 text-text-secondary hover:text-red-400 hover:bg-red-500/10"
                           >
                             <Trash2 className="h-4 w-4" />
@@ -305,11 +338,18 @@ export default function Drinks() {
                 </TableBody>
               </Table>
             </div>
+            )}
           </CardContent>
         </Card>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-          {filtered.map((drink) => (
+          {loading ? (
+            <div className="col-span-full py-16 text-center text-gray-400">加载中...</div>
+          ) : filtered.length === 0 ? (
+            <div className="col-span-full py-16 text-center">
+              <p className="text-text-muted text-sm">暂无酒水数据</p>
+            </div>
+          ) : filtered.map((drink) => (
             <Card key={drink.id} className="bg-surface-secondary border-gray-100 overflow-hidden group">
               <div className="aspect-[16/10] bg-surface-elevated flex items-center justify-center">
                 {drink.image_url ? (
@@ -331,7 +371,7 @@ export default function Drinks() {
                   <Button variant="ghost" size="icon" onClick={() => openEdit(drink)} className="h-7 w-7 text-text-secondary hover:text-gold hover:bg-primary/10">
                     <Pencil className="h-3.5 w-3.5" />
                   </Button>
-                  <Button variant="ghost" size="icon" onClick={() => handleDelete(drink.id)} className="h-7 w-7 text-text-secondary hover:text-red-400 hover:bg-red-500/10">
+                  <Button variant="ghost" size="icon" onClick={() => handleDelete(drink.id, drink.name)} className="h-7 w-7 text-text-secondary hover:text-red-400 hover:bg-red-500/10">
                     <Trash2 className="h-3.5 w-3.5" />
                   </Button>
                 </div>
@@ -534,7 +574,7 @@ export default function Drinks() {
                     <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openEditCategory(cat)}>
                       <Pencil className="h-3.5 w-3.5 text-text-secondary" />
                     </Button>
-                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDeleteCategory(cat.id)}>
+                    <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => handleDeleteCategory(cat.id, cat.name)}>
                       <Trash2 className="h-3.5 w-3.5 text-red-400" />
                     </Button>
                   </div>
@@ -583,6 +623,16 @@ export default function Drinks() {
           )}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={deleteConfirm.open}
+        onOpenChange={(open) => setDeleteConfirm({ ...deleteConfirm, open })}
+        title={deleteConfirm.type === 'drink' ? '删除酒水' : '删除分类'}
+        description={`确定要删除「${deleteConfirm.name}」吗？此操作不可撤销。`}
+        type="danger"
+        confirmText="删除"
+        onConfirm={confirmDelete}
+      />
     </div>
   );
 }

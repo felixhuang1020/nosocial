@@ -16,21 +16,29 @@ const AdminUsernameKey = "admin_username"
 // AdminAuth 管理员认证中间件
 func AdminAuth() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-		if authHeader == "" {
-			response.Unauthorized(c, "缺少认证信息")
-			c.Abort()
-			return
+		var tokenString string
+
+		// 优先从 Cookie 读取
+		if cookie, err := c.Cookie("admin_token"); err == nil && cookie != "" {
+			tokenString = cookie
+		} else {
+			// 回退到 Authorization Header
+			authHeader := c.GetHeader("Authorization")
+			if authHeader == "" {
+				response.Unauthorized(c, "缺少认证信息")
+				c.Abort()
+				return
+			}
+			parts := strings.SplitN(authHeader, " ", 2)
+			if len(parts) != 2 || parts[0] != "Bearer" {
+				response.Unauthorized(c, "认证格式错误")
+				c.Abort()
+				return
+			}
+			tokenString = parts[1]
 		}
 
-		parts := strings.SplitN(authHeader, " ", 2)
-		if len(parts) != 2 || parts[0] != "Bearer" {
-			response.Unauthorized(c, "认证格式错误")
-			c.Abort()
-			return
-		}
-
-		claims, err := jwt.ParseAdminToken(parts[1])
+		claims, err := jwt.ParseAdminToken(tokenString)
 		if err != nil {
 			switch err {
 			case jwt.ErrTokenExpired:

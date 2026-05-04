@@ -9,6 +9,7 @@ import (
 	"nosocial/internal/model"
 	"nosocial/internal/pkg/jwt"
 	"nosocial/internal/pkg/wx"
+	"strings"
 	"time"
 
 	"gorm.io/gorm"
@@ -96,13 +97,33 @@ func (s *UserService) WXLogin(req *WXLoginReq) (*WXLoginResp, error) {
 }
 
 func (s *UserService) bindInviteCode(userID uint64, inviteCode string) {
+	// 已绑定不再重复绑定
+	self, err := s.userDAO.GetByID(userID)
+	if err != nil {
+		return
+	}
+	if self.ParentID != nil && *self.ParentID > 0 {
+		return
+	}
 	parent, err := s.userDAO.GetByInviteCode(inviteCode)
 	if err != nil {
 		return
 	}
+	// 环检测：禁止自我邻请和间接循环（parentPath 包含自身）
+	if parent.ID == userID {
+		return
+	}
+	selfMarker := fmt.Sprintf("/%d/", userID)
+	if parent.ParentPath != nil && strings.Contains(*parent.ParentPath, selfMarker) {
+		return
+	}
 	parentPath := fmt.Sprintf("/%d/", parent.ID)
-	if parent.ParentPath != nil {
+	if parent.ParentPath != nil && *parent.ParentPath != "" {
 		parentPath = *parent.ParentPath + fmt.Sprintf("%d/", parent.ID)
+	}
+	// 长度保护（数据库字段为 varchar(500)）
+	if len(parentPath) > 500 {
+		return
 	}
 	s.userDAO.UpdateParent(userID, parent.ID, parentPath)
 }
@@ -128,8 +149,8 @@ func (s *UserService) UpdateBirthday(userID uint64, birthday string) error {
 	return s.userDAO.UpdateBirthday(userID, birthday)
 }
 
-func (s *UserService) GetUserList(offset, limit int) ([]*model.User, int64, error) {
-	return s.userDAO.List(offset, limit)
+func (s *UserService) GetUserList(offset, limit int, search string) ([]*model.User, int64, error) {
+	return s.userDAO.List(offset, limit, search)
 }
 
 func (s *UserService) UpdateUserStatus(userID uint64, status int8) error {
@@ -144,6 +165,9 @@ func (s *UserService) ClaimFreeDrink(userID uint64) error {
 	}
 	if user.IsShareholder != 1 {
 		return fmt.Errorf("only shareholder can claim free drink")
+	}
+	if user.ShareholderExpireAt != nil && user.ShareholderExpireAt.Before(time.Now()) {
+		return fmt.Errorf("股东身份已过期，请续费后再领取")
 	}
 	if user.FreeDrinkUsed == 1 {
 		return fmt.Errorf("free drink already claimed")

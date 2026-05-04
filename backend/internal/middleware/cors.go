@@ -21,7 +21,15 @@ var allowedOrigins = []string{
 func CORS() gin.HandlerFunc {
 	origins := allowedOrigins
 	if envOrigins := os.Getenv("NOSOCIAL_CORS_ORIGINS"); envOrigins != "" {
-		origins = strings.Split(envOrigins, ",")
+		raw := strings.Split(envOrigins, ",")
+		cleaned := make([]string, 0, len(raw))
+		for _, o := range raw {
+			o = strings.TrimSpace(o)
+			if o != "" {
+				cleaned = append(cleaned, o)
+			}
+		}
+		origins = cleaned
 	}
 
 	return cors.New(cors.Config{

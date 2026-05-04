@@ -82,9 +82,8 @@ Page({
   processPayment() {
     this.setData({ paying: true });
 
-    post('/wx/shareholder/pay', {
-      amount: parseFloat(this.data.registerFee)
-    }).then(res => {
+    // 注意：金额由后端配置决定，前端不传 amount
+    post('/wx/shareholder/pay', {}).then(res => {
       // 调起微信支付
       wx.requestPayment({
         ...res.pay_params,

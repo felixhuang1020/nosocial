@@ -16,7 +16,7 @@ Page({
   onLoad() {
     this.storeBindings = createStoreBindings(this, {
       store: appStore,
-      fields: ['inviteCode'],
+      fields: ['inviteCode', 'totalEarning'],
       actions: []
     });
 
@@ -41,11 +41,13 @@ Page({
 
     get('/wx/shareholder/team').then(res => {
       const list = Array.isArray(res) ? res : (res && res.list ? res.list : []);
+      // totalCommission 同步 store 中当前股东的累计收益（由后端结算写入）
+      const totalEarning = (appStore.totalEarning || '0.00');
       this.setData({
         teamList: list,
         totalMembers: list.length,
         activeMembers: list.filter(m => m.is_shareholder === 1).length,
-        totalCommission: '0.00',
+        totalCommission: totalEarning,
         loading: false
       });
     }).catch(err => {

@@ -11,6 +11,8 @@ import (
 	"nosocial/internal/pkg/utils"
 	"nosocial/internal/pkg/wxpay"
 	"time"
+
+	"gorm.io/gorm"
 )
 
 type OrderService struct {
@@ -19,15 +21,17 @@ type OrderService struct {
 	couponDAO *dao.CouponDAO
 	userDAO   *dao.UserDAO
 	wx        *wxpay.Client
+	db        *gorm.DB
 }
 
-func NewOrderService(orderDAO *dao.DrinkOrderDAO, drinkDAO *dao.DrinkDAO, couponDAO *dao.CouponDAO, userDAO *dao.UserDAO, wx *wxpay.Client) *OrderService {
+func NewOrderService(orderDAO *dao.DrinkOrderDAO, drinkDAO *dao.DrinkDAO, couponDAO *dao.CouponDAO, userDAO *dao.UserDAO, wx *wxpay.Client, db *gorm.DB) *OrderService {
 	return &OrderService{
 		orderDAO:  orderDAO,
 		drinkDAO:  drinkDAO,
 		couponDAO: couponDAO,
 		userDAO:   userDAO,
 		wx:        wx,
+		db:        db,
 	}
 }
 
@@ -124,6 +128,17 @@ func (s *OrderService) CreateOrder(userID uint64, req *CreateOrderReq) (*model.D
 		if total < c.MinOrderAmount {
 			return nil, fmt.Errorf("订单满 %.2f 元可用", c.MinOrderAmount)
 		}
+		// 防御：禁止同一张未使用的券同时绑定到多个未支付订单，
+		// 避免"先支付者扣券、后支付者享折扣不扣券"的折扣双花。
+		var pendingCnt int64
+		if err := s.db.Model(&model.DrinkOrder{}).
+			Where("coupon_id = ? AND user_id = ? AND status = 0", *req.CouponID, userID).
+			Count(&pendingCnt).Error; err != nil {
+			return nil, fmt.Errorf("校验优惠券占用失败: %w", err)
+		}
+		if pendingCnt > 0 {
+			return nil, errors.New("该优惠券已被其它未支付订单占用，请先完成或取消该订单")
+		}
 		discount = round2(c.Amount)
 		if discount > total {
 			discount = total
@@ -179,7 +194,14 @@ func (s *OrderService) GetOrderList(status int8, page, size int) ([]*model.Drink
 }
 
 func (s *OrderService) UpdateOrderStatus(id uint64, status int8) error {
-	return s.orderDAO.UpdateStatus(id, status)
+	affected, err := s.orderDAO.UpdateStatus(id, status)
+	if err != nil {
+		return err
+	}
+	if affected == 0 {
+		return fmt.Errorf("订单不存在")
+	}
+	return nil
 }
 
 // GetOrderByID 根据ID获取订单
@@ -255,11 +277,17 @@ func (s *OrderService) CancelOrder(userID uint64, orderID uint64) error {
 	if order.Status != 0 {
 		return errors.New("only unpaid order can be cancelled")
 	}
-	return s.orderDAO.UpdateStatus(orderID, 4)
+	_, err = s.orderDAO.UpdateStatus(orderID, 4)
+	return err
 }
 
-// PayCallback 酒水订单支付回调处理（CAS）
+// PayCallback 酒水订单支付回调处理（事务：CAS 标记已支付 + 事务内核销优惠券）
 // 返回 order 以便上层在真正成交时回调佣金计算
+//
+// 优惠券核销设计：
+// - 下单（CreateOrder）时仅校验 coupon 有效性并绑定 coupon_id，不修改 coupon.status；
+// - 真正的核销（status: 0 -> 1）在此处支付成交时进行，保证"未支付不扣券"、"已支付必扣券"；
+// - 若同一张券被绑定到多个未支付订单，先支付者胜出（CAS 保证），其余订单支付成功但不再重复核销。
 func (s *OrderService) PayCallback(orderNo, transactionID, rawNotify string, paidFen int64) (order *model.DrinkOrder, changed bool, err error) {
 	order, err = s.orderDAO.GetByOrderNo(orderNo)
 	if err != nil {
@@ -273,11 +301,46 @@ func (s *OrderService) PayCallback(orderNo, transactionID, rawNotify string, pai
 	if order.Status != 0 {
 		return order, false, nil
 	}
-	affected, err := s.orderDAO.MarkPaidCAS(orderNo, transactionID, rawNotify)
-	if err != nil {
-		return order, false, err
+
+	txErr := s.db.Transaction(func(tx *gorm.DB) error {
+		// 1. CAS 标记订单已支付
+		res := tx.Model(&model.DrinkOrder{}).
+			Where("order_no = ? AND status = 0", orderNo).
+			Updates(map[string]interface{}{
+				"status":         1,
+				"transaction_id": transactionID,
+				"notify_raw":     rawNotify,
+				"pay_time":       gorm.Expr("NOW()"),
+			})
+		if res.Error != nil {
+			return res.Error
+		}
+		if res.RowsAffected == 0 {
+			return nil // 已被其他回调处理，幂等退出
+		}
+		changed = true
+
+		// 2. 核销优惠券（仅当订单携带了 coupon_id 且 coupon 处于未用状态）
+		if order.CouponID != nil && *order.CouponID > 0 {
+			cres := tx.Model(&model.Coupon{}).
+				Where("id = ? AND user_id = ? AND status = 0", *order.CouponID, order.UserID).
+				Updates(map[string]interface{}{
+					"status":        1,
+					"used_at":       gorm.Expr("NOW()"),
+					"used_order_id": order.ID,
+				})
+			if cres.Error != nil {
+				return cres.Error
+			}
+			// rows=0 说明券已被先行支付的其它订单核销：订单已实际成交，保留优惠但不重复核销。
+			// 此为"多订单争抢同张券"的边界场景，由 CAS 天然排他。
+		}
+		return nil
+	})
+	if txErr != nil {
+		return order, false, txErr
 	}
-	if affected == 0 {
+	if !changed {
 		return order, false, nil
 	}
 	order.Status = 1

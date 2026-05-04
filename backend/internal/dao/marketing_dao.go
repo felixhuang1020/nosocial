@@ -64,6 +64,15 @@ func (d *ReviewDAO) GetByUser(userID uint64) (*model.Review, error) {
 	return &review, err
 }
 
+func (d *ReviewDAO) GetActiveByUser(userID uint64) (*model.Review, error) {
+	var review model.Review
+	err := d.db.Where("user_id = ? AND status IN (0, 1)", userID).First(&review).Error
+	if err != nil {
+		return nil, err
+	}
+	return &review, nil
+}
+
 func (d *ReviewDAO) List(status int8, offset, limit int) ([]*model.Review, int64, error) {
 	var reviews []*model.Review
 	var total int64

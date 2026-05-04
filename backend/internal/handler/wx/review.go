@@ -1,12 +1,29 @@
 package wx
 
 import (
+	"html"
+	"net/url"
 	"nosocial/internal/middleware"
 	"nosocial/internal/pkg/response"
 	"nosocial/internal/service"
 
 	"github.com/gin-gonic/gin"
 )
+
+// validateImageURL 验证图片 URL 合法性：仅允许 https + 指定 OSS 域名
+func validateImageURL(rawURL string) bool {
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return false
+	}
+	if parsed.Scheme != "https" {
+		return false
+	}
+	if parsed.Host != "nosocial.oss-cn-beijing.aliyuncs.com" {
+		return false
+	}
+	return true
+}
 
 type ReviewHandler struct {
 	reviewService *service.ReviewService
@@ -41,8 +58,25 @@ func (h *ReviewHandler) Submit(c *gin.Context) {
 		return
 	}
 
+	// 验证图片 URL 合法性
+	for _, imgURL := range imgs {
+		if !validateImageURL(imgURL) {
+			response.BadRequest(c, "图片地址不合法")
+			return
+		}
+	}
+
+	// 评价内容长度限制
+	if len([]rune(req.Content)) > 500 {
+		response.BadRequest(c, "评价内容不能超过500字")
+		return
+	}
+
+	// XSS 防护：转义 HTML 特殊字符
+	safeContent := html.EscapeString(req.Content)
+
 	userID := middleware.GetWXUserID(c)
-	review, err := h.reviewService.SubmitReview(userID, imgs, req.Content)
+	review, err := h.reviewService.SubmitReview(userID, imgs, safeContent)
 	if err != nil {
 		response.Error(c, 1, err.Error())
 		return

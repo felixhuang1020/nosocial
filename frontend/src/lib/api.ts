@@ -2,22 +2,12 @@
 const API_BASE = import.meta.env.VITE_API_BASE || '/api/v1';
 const REQUEST_TIMEOUT_MS = 15000;
 
-// Helper: get stored admin token
-function getToken(): string | null {
-  return localStorage.getItem('admin_token');
-}
+// 事件总线：让 React 组件通过监听事件来响应 401，避免硬编码 location 跳转
+export const authEvents = new EventTarget();
 
-// 处理 401：清掉本地凭证并引导用户回登录页
-// 用 location 而不是 react-router 以防止循环依赖
+// 处理 401：通过事件通知 UI 层跳转登录页
 function handleUnauthorized() {
-  try {
-    localStorage.removeItem('admin_token');
-  } catch {
-    // ignore
-  }
-  if (typeof window !== 'undefined' && !window.location.pathname.endsWith('/login')) {
-    window.location.replace('/login');
-  }
+  authEvents.dispatchEvent(new Event('unauthorized'));
 }
 
 // Helper: unified fetch wrapper
@@ -28,13 +18,9 @@ async function request<T>(
   const url = `${API_BASE}${path}`;
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
     ...(options.headers as Record<string, string>),
   };
-
-  const token = getToken();
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
 
   // 超时控制：避免页面挂死在 hung 连接上
   const controller = new AbortController();
@@ -44,6 +30,7 @@ async function request<T>(
   try {
     resp = await fetch(url, {
       ...options,
+      credentials: 'include',
       headers,
       signal: options.signal ?? controller.signal,
     });
@@ -136,8 +123,10 @@ export interface User {
   updated_at: string;
 }
 
-export function getUserList(page = 1, size = 20) {
-  return request<{ list: User[]; total: number }>(`/admin/users?page=${page}&size=${size}`);
+export function getUserList(page = 1, size = 20, search?: string) {
+  let qs = `page=${page}&size=${size}`;
+  if (search) qs += `&search=${encodeURIComponent(search)}`;
+  return request<{ list: User[]; total: number }>(`/admin/users?${qs}`);
 }
 
 export function updateUserStatus(id: number, status: number) {
@@ -148,12 +137,24 @@ export function updateUserStatus(id: number, status: number) {
 }
 
 // ==================== Shareholders ====================
-export function getShareholderList(page = 1, size = 20) {
-  return request<{ list: User[]; total: number }>(`/admin/shareholders?page=${page}&size=${size}`);
+export interface EarningsRecord {
+  id: number;
+  type: string;
+  amount: number;
+  status: number;
+  order_id?: number;
+  order_no?: string;
+  created_at: string;
+}
+
+export function getShareholderList(page = 1, size = 20, search?: string) {
+  let qs = `page=${page}&size=${size}`;
+  if (search) qs += `&search=${encodeURIComponent(search)}`;
+  return request<{ list: User[]; total: number }>(`/admin/shareholders?${qs}`);
 }
 
 export function getShareholderEarnings(id: number, page = 1, size = 20) {
-  return request<{ list: unknown[]; total: number }>(
+  return request<{ list: EarningsRecord[]; total: number }>(
     `/admin/shareholders/${id}/earnings?page=${page}&size=${size}`
   );
 }
@@ -438,4 +439,9 @@ export function getOSSSignature(dir = 'uploads', ext = '') {
 
 export function fixObjectInline(key: string) {
   return request<{ key: string; status: string }>(`/admin/upload/inline?key=${encodeURIComponent(key)}`, { method: 'PUT' });
+}
+
+// ==================== Logout ====================
+export function adminLogout() {
+  return request('/admin/logout', { method: 'POST' });
 }

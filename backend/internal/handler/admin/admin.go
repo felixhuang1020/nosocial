@@ -1,9 +1,15 @@
 package admin
 
 import (
+	"context"
+	"net/http"
+	"nosocial/config"
+	"nosocial/internal/pkg/jwt"
 	"nosocial/internal/pkg/response"
 	"nosocial/internal/service"
 	"strconv"
+	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -48,7 +54,44 @@ func (h *AdminHandler) Login(c *gin.Context) {
 		response.Error(c, 1, err.Error())
 		return
 	}
+
+	// 设置 httpOnly Cookie，开发环境不强制 HTTPS
+	cfg := config.C
+	isSecure := cfg.App.Mode == "release"
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("admin_token", resp.Token, cfg.JWT.AdminExpire, "/api/v1/admin", "", isSecure, true)
+
 	response.Success(c, resp)
+}
+
+func (h *AdminHandler) Logout(c *gin.Context) {
+	// 1. 尝试获取当前 token 进行吊销
+	var tokenString string
+	if cookie, err := c.Cookie("admin_token"); err == nil && cookie != "" {
+		tokenString = cookie
+	} else {
+		authHeader := c.GetHeader("Authorization")
+		parts := strings.SplitN(authHeader, " ", 2)
+		if len(parts) == 2 && parts[0] == "Bearer" {
+			tokenString = parts[1]
+		}
+	}
+
+	// 2. 吊销 token（解析出 jti 后加入黑名单）
+	if tokenString != "" {
+		if claims, err := jwt.ParseAdminToken(tokenString); err == nil {
+			cfg := config.C
+			ttl := time.Duration(cfg.JWT.AdminExpire) * time.Second
+			_ = jwt.Revoke(context.Background(), claims.ID, ttl)
+		}
+	}
+
+	// 3. 清除 Cookie
+	isSecure := config.C.App.Mode == "release"
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie("admin_token", "", -1, "/api/v1/admin", "", isSecure, true)
+
+	response.Success(c, nil)
 }
 
 func (h *AdminHandler) Dashboard(c *gin.Context) {
@@ -107,7 +150,8 @@ func NewUserAdminHandler(userService *service.UserService) *UserAdminHandler {
 
 func (h *UserAdminHandler) List(c *gin.Context) {
 	page, size := getPageSize(c)
-	users, total, err := h.userService.GetUserList((page-1)*size, size)
+	search := c.Query("search")
+	users, total, err := h.userService.GetUserList((page-1)*size, size, search)
 	if err != nil {
 		response.Error(c, 1, err.Error())
 		return

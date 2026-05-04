@@ -54,7 +54,7 @@ func SetupRouter(app *bootstrap.App) *gin.Engine {
 	shareholderService := service.NewShareholderService(userDAO, shareholderOrderDAO, commissionDAO, withdrawalDAO, app.WXPay, app.DB)
 	tarotService := service.NewTarotService(tarotCardDAO, tarotReadingDAO, tarotMappingDAO, drinkDAO, app.DB)
 	drinkService := service.NewDrinkService(drinkDAO, categoryDAO)
-	orderService := service.NewOrderService(orderDAO, drinkDAO, couponDAO, userDAO, app.WXPay)
+	orderService := service.NewOrderService(orderDAO, drinkDAO, couponDAO, userDAO, app.WXPay, app.DB)
 	reviewService := service.NewReviewService(reviewDAO, couponDAO, userDAO, app.DB)
 	couponService := service.NewCouponService(couponDAO, app.DB)
 	birthdayService := service.NewBirthdayService(birthdayDAO, userDAO, app.DB)
@@ -122,6 +122,7 @@ func SetupRouter(app *bootstrap.App) *gin.Engine {
 			wxAuth.GET("/shareholder/earnings", wxShareholderHandler.Earnings)
 			wxAuth.GET("/shareholder/team", wxShareholderHandler.Team)
 			wxAuth.POST("/shareholder/withdraw", wxShareholderHandler.Withdraw)
+			wxAuth.GET("/shareholder/withdrawals", wxShareholderHandler.Withdrawals)
 
 			wxAuth.POST("/tarot/divine", wxTarotHandler.Divine)
 			wxAuth.GET("/tarot/history", wxTarotHandler.History)
@@ -134,7 +135,9 @@ func SetupRouter(app *bootstrap.App) *gin.Engine {
 			wxAuth.GET("/review/status", wxReviewHandler.Status)
 
 			wxAuth.GET("/coupons", wxCouponHandler.MyCoupons)
-			wxAuth.POST("/coupons/use", wxCouponHandler.UseCoupon)
+			// 注意：不再暴露 /coupons/use 前端主动核销接口。
+			// 优惠券核销统一由 OrderService.PayCallback 在支付成功事务内完成，
+			// 避免用户在不支付的情况下直接把券置为已用（或反之重复使用）。
 
 			wxAuth.POST("/orders", wxOrderHandler.Create)
 			wxAuth.GET("/orders", wxOrderHandler.List)
@@ -156,6 +159,7 @@ func SetupRouter(app *bootstrap.App) *gin.Engine {
 		adminAuth := admin.Group("")
 		adminAuth.Use(middleware.AdminAuth(), middleware.RateLimitGeneral())
 		{
+			adminAuth.POST("/logout", adminHandler.Logout)
 			adminAuth.GET("/dashboard", adminHandler.Dashboard)
 
 			adminAuth.GET("/users", userAdminHandler.List)
@@ -164,6 +168,9 @@ func SetupRouter(app *bootstrap.App) *gin.Engine {
 			adminAuth.GET("/shareholders", shareholderAdminHandler.List)
 			adminAuth.GET("/shareholders/:id/earnings", shareholderAdminHandler.Earnings)
 			adminAuth.GET("/shareholders/:id/team", shareholderAdminHandler.Team)
+			adminAuth.GET("/withdrawals", shareholderAdminHandler.ListWithdrawals)
+			adminAuth.POST("/withdrawals/:id/approve", shareholderAdminHandler.ApproveWithdrawal)
+			adminAuth.POST("/withdrawals/:id/reject", shareholderAdminHandler.RejectWithdrawal)
 
 			adminAuth.GET("/drinks", drinkAdminHandler.List)
 			adminAuth.POST("/drinks", drinkAdminHandler.Create)

@@ -1,7 +1,8 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/authStore';
+import { authEvents } from '@/lib/api';
 import { Layout } from '@/components/layout/Layout';
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { Skeleton } from '@/components/ui/skeleton';
 
 // Lazy load pages
@@ -40,9 +41,34 @@ function PublicRoute({ children }: { children: React.ReactNode }) {
   return !isAuthenticated ? <>{children}</> : <Navigate to="/dashboard" replace />;
 }
 
+// 监听 API 层 401 事件，通过 React Router 跳转到登录页
+function AuthEventListener() {
+  const navigate = useNavigate();
+  useEffect(() => {
+    const handler = () => {
+      navigate('/login', { replace: true });
+    };
+    authEvents.addEventListener('unauthorized', handler);
+    return () => authEvents.removeEventListener('unauthorized', handler);
+  }, [navigate]);
+  return null;
+}
+
 export default function App() {
+  const checkAuth = useAuthStore((s) => s.checkAuth);
+  const [authChecked, setAuthChecked] = useState(false);
+
+  useEffect(() => {
+    checkAuth().finally(() => setAuthChecked(true));
+  }, []);
+
+  if (!authChecked) {
+    return <div className="flex items-center justify-center h-screen">加载中...</div>;
+  }
+
   return (
     <Suspense fallback={<PageLoader />}>
+      <AuthEventListener />
       <Routes>
         <Route
           path="/login"

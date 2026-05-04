@@ -112,3 +112,53 @@ func (d *WithdrawalDAO) ListByUser(userID uint64, offset, limit int) ([]*model.W
 	err := query.Offset(offset).Limit(limit).Order("id DESC").Find(&records).Error
 	return records, total, err
 }
+
+// ListAll 管理端：按状态可选过滤的提现列表
+// status 传 -1 表示不过滤，0/1/2 对应待处理/已处理/已拒绝
+func (d *WithdrawalDAO) ListAll(status int8, offset, limit int) ([]*model.Withdrawal, int64, error) {
+	var records []*model.Withdrawal
+	var total int64
+	q := d.db.Model(&model.Withdrawal{})
+	if status >= 0 {
+		q = q.Where("status = ?", status)
+	}
+	if err := q.Count(&total).Error; err != nil {
+		return nil, 0, err
+	}
+	err := q.Offset(offset).Limit(limit).Order("id DESC").Find(&records).Error
+	return records, total, err
+}
+
+// GetByID 获取提现记录
+func (d *WithdrawalDAO) GetByID(id uint64) (*model.Withdrawal, error) {
+	var w model.Withdrawal
+	err := d.db.Where("id = ?", id).First(&w).Error
+	return &w, err
+}
+
+// ApproveCAS 幂等通过（仅当 status=0时才置 1），返回影响行数
+func (d *WithdrawalDAO) ApproveCAS(id uint64) (int64, error) {
+	res := d.db.Model(&model.Withdrawal{}).
+		Where("id = ? AND status = 0", id).
+		Updates(map[string]interface{}{
+			"status":       1,
+			"processed_at": gorm.Expr("NOW()"),
+		})
+	return res.RowsAffected, res.Error
+}
+
+// RejectCAS 幂等拒绝（仅当 status=0时才置 2），返回影响行数
+func (d *WithdrawalDAO) RejectCAS(tx *gorm.DB, id uint64, reason string) (int64, error) {
+	db := d.db
+	if tx != nil {
+		db = tx
+	}
+	res := db.Model(&model.Withdrawal{}).
+		Where("id = ? AND status = 0", id).
+		Updates(map[string]interface{}{
+			"status":        2,
+			"reject_reason": reason,
+			"processed_at":  gorm.Expr("NOW()"),
+		})
+	return res.RowsAffected, res.Error
+}

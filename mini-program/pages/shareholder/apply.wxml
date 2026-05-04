@@ -80,6 +80,7 @@
       size="large"
       bindtap="applyShareholder"
       loading="{{paying}}"
+      disabled="{{paying}}"
     >
       <text>立即加入 ¥{{registerFee}}</text>
     </t-button>

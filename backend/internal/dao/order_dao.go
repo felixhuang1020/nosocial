@@ -51,12 +51,13 @@ func (d *DrinkOrderDAO) ListAll(status int8, offset, limit int) ([]*model.DrinkO
 	return orders, total, err
 }
 
-func (d *DrinkOrderDAO) UpdateStatus(id uint64, status int8) error {
+func (d *DrinkOrderDAO) UpdateStatus(id uint64, status int8) (int64, error) {
 	updates := map[string]interface{}{"status": status}
 	if status == 1 { // 已支付
 		updates["pay_time"] = gorm.Expr("NOW()")
 	}
-	return d.db.Model(&model.DrinkOrder{}).Where("id = ?", id).Updates(updates).Error
+	res := d.db.Model(&model.DrinkOrder{}).Where("id = ?", id).Updates(updates)
+	return res.RowsAffected, res.Error
 }
 
 // UpdatePrepayID 写回微信 prepay_id（仅在未支付状态）
