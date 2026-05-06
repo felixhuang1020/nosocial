@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { FilterTabs } from '@/components/shared/FilterBar';
 import { ImageUpload } from '@/components/shared/ImageUpload';
@@ -33,18 +33,29 @@ export default function Banners() {
     position: 1,
   });
 
-  useEffect(() => {
-    loadBanners();
-  }, []);
-
-  async function loadBanners() {
+  const loadBanners = useCallback(async () => {
     const res = await getBannerList();
     if (res.code === 0) setBanners(res.data?.list || []);
-  }
+  }, []);
+
+  useEffect(() => {
+    void loadBanners();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const filtered = banners.filter((b) =>
     filterPosition === 'all' ? true : b.position === Number(filterPosition)
   );
+
+  const handleOpenUploadModal = () => {
+    const initialPosition = filterPosition !== 'all' ? Number(filterPosition) : 1;
+    setNewBanner({
+      title: '',
+      image_url: '',
+      position: initialPosition,
+    });
+    setUploadModal(true);
+  };
 
   const handleAdd = async () => {
     if (!newBanner.title || !newBanner.image_url) {
@@ -76,7 +87,7 @@ export default function Banners() {
     <div className="space-y-6">
       <PageHeader title="图片管理" subtitle="管理首页轮播图和展示页画廊">
         <Button
-          onClick={() => setUploadModal(true)}
+          onClick={handleOpenUploadModal}
           className="bg-gold text-white hover:bg-gold-light hover:shadow-gold-glow"
         >
           <Plus className="mr-2 h-4 w-4" />
@@ -95,7 +106,7 @@ export default function Banners() {
         {/* Upload placeholder card */}
         <Card
           className="bg-surface-secondary border-dashed border-2 border-border hover:border-primary hover:bg-primary/[0.04] transition-all duration-200 cursor-pointer min-h-[200px] flex flex-col items-center justify-center"
-          onClick={() => setUploadModal(true)}
+          onClick={handleOpenUploadModal}
         >
           <ImagePlus className="h-10 w-10 text-text-muted mb-2" />
           <span className="text-sm text-text-muted">点击上传新图片</span>

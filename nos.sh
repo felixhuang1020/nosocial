@@ -11,9 +11,35 @@ LOG_DIR="$SCRIPT_DIR/backend/logs"
 
 # ============================================================
 # 后端配置环境变量（NOSOCIAL_ 前缀，由 viper AutomaticEnv 映射）
-# 外部已设置同名变量则沿用，否则使用开发缺省值
+# 优先级：外部已存在的环境变量  >  backend/.env 文件  >  脚本内兜底默认值
 # config.yaml 中对应字段应留空，避免明文泄露
 # ============================================================
+
+ENV_FILE="$BACKEND_DIR/.env"
+if [ -f "$ENV_FILE" ]; then
+  # 逐行读取 .env：跳过空行与注释行，支持值内含 = 号；
+  # 仅当该变量尚未在外部环境中定义时才导出，保证"外部 > .env > 默认值"的优先级。
+  while IFS= read -r line || [ -n "$line" ]; do
+    # 去掉行首尾空白
+    line="${line#"${line%%[![:space:]]*}"}"
+    line="${line%"${line##*[![:space:]]}"}"
+    [ -z "$line" ] && continue
+    case "$line" in
+      \#*) continue ;;
+    esac
+    key="${line%%=*}"
+    value="${line#*=}"
+    # 去除 value 两端的成对引号
+    case "$value" in
+      \"*\") value="${value#\"}"; value="${value%\"}" ;;
+      \'*\') value="${value#\'}"; value="${value%\'}" ;;
+    esac
+    # 仅在环境中尚未定义时注入
+    if [ -z "${(P)key-}" ]; then
+      export "$key=$value"
+    fi
+  done < "$ENV_FILE"
+fi
 
 # --- App ---
 export NOSOCIAL_APP_MODE="${NOSOCIAL_APP_MODE:-debug}"
@@ -40,7 +66,7 @@ export NOSOCIAL_JWT_WX_SECRET="${NOSOCIAL_JWT_WX_SECRET:-HT7nIkRlymvngokQDdzuueS
 export NOSOCIAL_OSS_ACCESS_KEY_ID="${NOSOCIAL_OSS_ACCESS_KEY_ID:-LTAI5t89vpzWokSwxJJTeCzT}"
 export NOSOCIAL_OSS_ACCESS_KEY_SECRET="${NOSOCIAL_OSS_ACCESS_KEY_SECRET:-93MzcnCso7QXfZKVj3SybYjJZaPgqw}"
 
-# --- WX（小程序登录/支付，未配置可留空） ---
+# --- WX（小程序登录/支付，值统一从 backend/.env 读取；未配置则留空） ---
 export NOSOCIAL_WX_APPID="${NOSOCIAL_WX_APPID:-}"
 export NOSOCIAL_WX_SECRET="${NOSOCIAL_WX_SECRET:-}"
 export NOSOCIAL_WX_API_V3_KEY="${NOSOCIAL_WX_API_V3_KEY:-}"

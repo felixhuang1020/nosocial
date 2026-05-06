@@ -108,9 +108,9 @@ func (h *UploadHandler) Upload(c *gin.Context) {
 		return
 	}
 
-	// 验证文件大小 (最大 5MB)
-	if file.Size > 5*1024*1024 {
-		response.BadRequest(c, "文件大小不能超过5MB")
+	// 验证文件大小 (最大 10MB)
+	if file.Size > 10*1024*1024 {
+		response.BadRequest(c, "文件大小不能超过10MB")
 		return
 	}
 

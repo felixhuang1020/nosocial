@@ -61,7 +61,10 @@ Page({
       wx.showToast({ title: '登录成功', icon: 'success' });
       this.fetchUserProfile();
     }).catch(err => {
-      wx.showToast({ title: '登录失败', icon: 'none' });
+      // 打印详细错误，便于排查（生产可按需降噪）
+      console.error('[profile.handleLogin] wxLogin failed:', err);
+      const msg = (err && (err.message || err.msg)) || '登录失败';
+      wx.showToast({ title: msg, icon: 'none' });
     }).finally(() => {
       this.setData({ loginLoading: false });
     });
@@ -81,6 +84,7 @@ Page({
 
   // 获取团队人数
   fetchTeamCount() {
+    if (!this.data.isShareholder) return;
     get('/wx/shareholder/team').then(res => {
       const count = Array.isArray(res) ? res.length : 0;
       this.setData({ teamCount: count });

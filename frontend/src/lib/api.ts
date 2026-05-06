@@ -136,6 +136,12 @@ export function updateUserStatus(id: number, status: number) {
   });
 }
 
+export function setUserAsShareholder(id: number) {
+  return request<null>(`/admin/users/${id}/set-shareholder`, {
+    method: 'POST',
+  });
+}
+
 // ==================== Shareholders ====================
 export interface EarningsRecord {
   id: number;

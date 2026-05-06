@@ -42,5 +42,8 @@ func (h *BirthdayHandler) History(c *gin.Context) {
 		response.Error(c, 1, err.Error())
 		return
 	}
-	response.Success(c, history)
+	response.Success(c, map[string]interface{}{
+		"list":  history,
+		"total": len(history),
+	})
 }

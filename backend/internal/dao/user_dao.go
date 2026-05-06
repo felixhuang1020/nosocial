@@ -2,6 +2,7 @@ package dao
 
 import (
 	"nosocial/internal/model"
+	"time"
 
 	"gorm.io/gorm"
 )
@@ -126,4 +127,17 @@ func (d *UserDAO) ClaimFreeDrinkCAS(userID uint64) (int64, error) {
 		Where("id = ? AND is_shareholder = 1 AND free_drink_used = 0", userID).
 		Update("free_drink_used", 1)
 	return res.RowsAffected, res.Error
+}
+
+// SetAsShareholder 管理员手动设置用户为共享股东
+func (d *UserDAO) SetAsShareholder(userID uint64, inviteCode string) error {
+	expireAt := time.Now().AddDate(1, 0, 0)
+	updates := map[string]interface{}{
+		"is_shareholder":        int8(1),
+		"shareholder_level":     int8(1),
+		"register_fee_paid":     int8(1),
+		"shareholder_expire_at": expireAt,
+		"invite_code":           inviteCode,
+	}
+	return d.db.Model(&model.User{}).Where("id = ?", userID).Updates(updates).Error
 }

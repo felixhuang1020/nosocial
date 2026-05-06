@@ -25,10 +25,15 @@
       theme="primary" 
       class="btn-gold start-btn" 
       size="large"
+      block
       bindtap="startDivination"
     >
-      <t-icon name="magic" size="36rpx" color="#FFFFFF" />
-      <text style="margin-left: 12rpx;">开始占卜</text>
+      <view class="btn-inner">
+        <text class="btn-sparkle left">✦</text>
+        <t-icon name="moon-filled" size="36rpx" color="#FFFFFF" />
+        <text class="btn-text">开始占卜</text>
+        <text class="btn-sparkle right">✦</text>
+      </view>
     </t-button>
   </view>
   

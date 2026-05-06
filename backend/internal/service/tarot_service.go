@@ -204,6 +204,10 @@ func (s *TarotService) GetHistory(userID uint64, offset, limit int) ([]*model.Ta
 	return s.readingDAO.ListByUser(userID, offset, limit)
 }
 
+func (s *TarotService) GetReadingByID(userID uint64, readingID uint) (*model.TarotReading, error) {
+	return s.readingDAO.GetByID(userID, readingID)
+}
+
 func (s *TarotService) GetCards() ([]*model.TarotCard, error) {
 	return s.cardDAO.List()
 }

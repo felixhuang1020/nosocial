@@ -31,11 +31,9 @@ Page({
 
   // 获取占卜详情
   fetchReadingDetail(id) {
-    get('/wx/tarot/history', { page: 1, size: 100 }).then(res => {
-      const list = res && res.list ? res.list : [];
-      const item = list.find(r => r.id === parseInt(id));
-      if (item) {
-        this.processHistoryItem(item);
+    get('/wx/tarot/history/' + id).then(res => {
+      if (res) {
+        this.processHistoryItem(res);
       }
     }).catch(err => {
       console.error('获取占卜详情失败:', err);

@@ -13,10 +13,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { getUserList, updateUserStatus, type User as APIUser } from '@/lib/api';
+import { getUserList, updateUserStatus, setUserAsShareholder, type User as APIUser } from '@/lib/api';
 import { USER_STATUS } from '@/lib/constants';
 import { Pagination } from '@/components/shared/Pagination';
-import { Download, Ban, CheckCircle, Eye } from 'lucide-react';
+import { Download, Ban, CheckCircle, Eye, UserPlus } from 'lucide-react';
 import { useToastStore } from '@/stores/toastStore';
 
 export default function Users() {
@@ -34,6 +34,10 @@ export default function Users() {
     user: null,
     action: 'disable',
   });
+  const [shareholderDialog, setShareholderDialog] = useState<{
+    open: boolean;
+    user: APIUser | null;
+  }>({ open: false, user: null });
 
   // debounce 搜索
   useEffect(() => {
@@ -46,13 +50,23 @@ export default function Users() {
 
   // 数据获取
   useEffect(() => {
-    setLoading(true);
-    getUserList(page, pageSize, debouncedSearch || undefined).then((res) => {
-      if (res.code === 0) {
-        setUsers(res.data.list || []);
-        setTotal(res.data.total || 0);
+    let cancelled = false;
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const res = await getUserList(page, pageSize, debouncedSearch || undefined);
+        if (!cancelled && res.code === 0) {
+          setUsers(res.data.list || []);
+          setTotal(res.data.total || 0);
+        }
+      } catch {
+        // handle error
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    }).finally(() => setLoading(false));
+    };
+    fetchData();
+    return () => { cancelled = true; };
   }, [page, debouncedSearch]);
 
   // filterRole 在当前页内过滤（后端不支持 is_shareholder 过滤）
@@ -61,6 +75,30 @@ export default function Users() {
     : users.filter((user) =>
         filterRole === 'shareholder' ? user.is_shareholder === 1 : user.is_shareholder === 0
       );
+
+  const handleSetShareholder = (user: APIUser) => {
+    if (user.is_shareholder === 1) {
+      addToast({ type: 'warning', message: '该用户已是股东' });
+      return;
+    }
+    setShareholderDialog({ open: true, user });
+  };
+
+  const confirmSetShareholder = async () => {
+    if (!shareholderDialog.user) return;
+    try {
+      await setUserAsShareholder(shareholderDialog.user.id);
+      const res = await getUserList(page, pageSize, debouncedSearch || undefined);
+      if (res.code === 0) {
+        setUsers(res.data.list || []);
+        setTotal(res.data.total || 0);
+      }
+      addToast({ type: 'success', message: '已成功设为共享股东' });
+    } catch (err) {
+      addToast({ type: 'error', message: err instanceof Error ? err.message : '操作失败' });
+    }
+    setShareholderDialog({ open: false, user: null });
+  };
 
   const handleToggleStatus = (user: APIUser) => {
     const action = user.status === USER_STATUS.ACTIVE ? 'disable' : 'enable';
@@ -171,6 +209,17 @@ export default function Users() {
                       </TableCell>
                       <TableCell className="text-right">
                         <div className="flex items-center justify-end gap-1">
+                          {user.is_shareholder !== 1 && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => handleSetShareholder(user)}
+                              className="h-8 w-8 text-text-secondary hover:text-amber-500 hover:bg-amber-500/10"
+                              title="设为共享股东"
+                            >
+                              <UserPlus className="h-4 w-4" />
+                            </Button>
+                          )}
                           <Button
                             variant="ghost"
                             size="icon"
@@ -211,6 +260,16 @@ export default function Users() {
         type={confirmDialog.action === 'disable' ? 'warning' : 'success'}
         confirmText={confirmDialog.action === 'disable' ? '禁用' : '启用'}
         onConfirm={confirmToggle}
+      />
+
+      <ConfirmDialog
+        open={shareholderDialog.open}
+        onOpenChange={(open) => setShareholderDialog({ ...shareholderDialog, open })}
+        title="设为共享股东"
+        description={`确定要将用户「${shareholderDialog.user?.nickname || ''}」设为共享股东吗？设置后该用户将获得股东身份，有效期为1年。`}
+        type="success"
+        confirmText="确定"
+        onConfirm={confirmSetShareholder}
       />
     </div>
   );

@@ -46,24 +46,41 @@
         <view class="birthday-calendar">
           <t-icon name="calendar" size="80rpx" color="#7C9A92" />
         </view>
-        <text class="birthday-title" wx:if="{{birthday}}">你的生日是 {{birthday}}</text>
+        <view class="birthday-title-row" wx:if="{{birthday}}">
+          <text class="birthday-title-label">你的生日是</text>
+          <view class="birthday-date-chip">
+            <text class="birthday-date-num">{{birthdayMonth}}</text>
+            <text class="birthday-date-sep">•</text>
+            <text class="birthday-date-num">{{birthdayDay}}</text>
+          </view>
+        </view>
         <text class="birthday-title" wx:if="{{!birthday}}">尚未设置生日</text>
         
         <text class="birthday-desc" wx:if="{{birthday && daysUntil > 0}}">
           距离生日还有 {{daysUntil}} 天
         </text>
-        <text class="birthday-desc" wx:if="{{birthday && daysUntil === 0}}">
-          明天就是生日啦！
-        </text>
         <text class="birthday-desc" wx:if="{{!birthday}}">
           设置生日后，生日当天可领取专属礼品
         </text>
-        
+
         <view class="gift-preview">
-          <view class="preview-title">生日礼品预览</view>
-          <view class="preview-item">
-            <t-icon name="wine" size="36rpx" color="#7C9A92" />
-            <text>生日特调鸡尾酒一杯</text>
+          <view class="mystery-gift-header">
+            <t-icon name="gift" size="32rpx" color="#7C9A92" />
+            <text class="preview-title">神秘礼品</text>
+          </view>
+          <view class="mystery-gift-box">
+            <view class="mystery-gift-icon">
+              <t-icon name="lock-on" size="48rpx" color="#FFFFFF" />
+            </view>
+            <view class="mystery-gift-content">
+              <text class="mystery-gift-name">???</text>
+              <text class="mystery-gift-hint">生日当天揭晓，敬请期待</text>
+            </view>
+          </view>
+          <view class="mystery-gift-decorations">
+            <view class="deco-dot"></view>
+            <view class="deco-dot"></view>
+            <view class="deco-dot"></view>
           </view>
         </view>
         

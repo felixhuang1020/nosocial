@@ -73,6 +73,49 @@
   margin-bottom: 12rpx;
 }
 
+/* 生日月日展示 */
+.birthday-title-row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18rpx;
+  margin-bottom: 16rpx;
+}
+
+.birthday-title-label {
+  font-size: 28rpx;
+  color: #6B7280;
+  letter-spacing: 2rpx;
+}
+
+.birthday-date-chip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16rpx;
+  padding: 14rpx 36rpx;
+  border-radius: 40rpx;
+  background: linear-gradient(135deg, rgba(124, 154, 146, 0.14) 0%, rgba(95, 133, 120, 0.08) 100%);
+  border: 1rpx solid rgba(124, 154, 146, 0.25);
+  box-shadow: 0 4rpx 12rpx rgba(124, 154, 146, 0.1);
+}
+
+.birthday-date-num {
+  font-size: 56rpx;
+  font-weight: 700;
+  color: #5F8578;
+  line-height: 1;
+  font-feature-settings: 'tnum';
+  letter-spacing: 2rpx;
+}
+
+.birthday-date-sep {
+  font-size: 32rpx;
+  color: rgba(124, 154, 146, 0.6);
+  line-height: 1;
+  transform: translateY(-2rpx);
+}
+
 .birthday-desc {
   font-size: 26rpx;
   color: #6B7280;
@@ -125,28 +168,149 @@
   width: 100%;
 }
 
-/* 礼品预览 */
+/* 神秘礼品 */
 .gift-preview {
   width: 100%;
-  background: rgba(124, 154, 146, 0.05);
-  border-radius: 16rpx;
-  padding: 24rpx;
+  position: relative;
+  border-radius: 24rpx;
+  padding: 30rpx;
   margin-bottom: 30rpx;
+  background: linear-gradient(135deg, rgba(124, 154, 146, 0.12) 0%, rgba(95, 133, 120, 0.08) 100%);
+  border: 2rpx dashed rgba(124, 154, 146, 0.35);
+  overflow: hidden;
+}
+
+.gift-preview::before {
+  content: '';
+  position: absolute;
+  top: -40rpx;
+  right: -40rpx;
+  width: 140rpx;
+  height: 140rpx;
+  background: radial-gradient(circle, rgba(124, 154, 146, 0.15) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.gift-preview::after {
+  content: '';
+  position: absolute;
+  bottom: -30rpx;
+  left: -30rpx;
+  width: 100rpx;
+  height: 100rpx;
+  background: radial-gradient(circle, rgba(124, 154, 146, 0.1) 0%, transparent 70%);
+  border-radius: 50%;
+}
+
+.mystery-gift-header {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10rpx;
+  margin-bottom: 20rpx;
+  position: relative;
+  z-index: 1;
 }
 
 .preview-title {
-  font-size: 26rpx;
-  color: #6B7280;
-  margin-bottom: 12rpx;
-  display: block;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #7C9A92;
 }
 
-.preview-item {
+.mystery-gift-box {
   display: flex;
   align-items: center;
+  gap: 20rpx;
+  background: linear-gradient(135deg, #7C9A92 0%, #5F8578 100%);
+  border-radius: 20rpx;
+  padding: 28rpx;
+  position: relative;
+  z-index: 1;
+  box-shadow:
+    0 8rpx 24rpx rgba(95, 133, 120, 0.25),
+    inset 0 2rpx 0 rgba(255, 255, 255, 0.15);
+}
+
+.mystery-gift-icon {
+  width: 88rpx;
+  height: 88rpx;
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  animation: mystery-pulse 2.5s ease-in-out infinite;
+  backdrop-filter: blur(4rpx);
+  border: 2rpx solid rgba(255, 255, 255, 0.15);
+}
+
+@keyframes mystery-pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(255, 255, 255, 0);
+  }
+  50% {
+    transform: scale(1.08);
+    box-shadow: 0 0 20rpx rgba(255, 255, 255, 0.25);
+  }
+}
+
+.mystery-gift-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.mystery-gift-name {
+  font-size: 36rpx;
+  font-weight: 700;
+  color: #FFFFFF;
+  letter-spacing: 4rpx;
+  text-shadow: 0 2rpx 4rpx rgba(0, 0, 0, 0.1);
+}
+
+.mystery-gift-hint {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.mystery-gift-decorations {
+  display: flex;
+  justify-content: center;
   gap: 12rpx;
-  font-size: 28rpx;
-  color: #1A1D23;
+  margin-top: 20rpx;
+  position: relative;
+  z-index: 1;
+}
+
+.deco-dot {
+  width: 8rpx;
+  height: 8rpx;
+  background: rgba(124, 154, 146, 0.5);
+  border-radius: 50%;
+  animation: dot-float 2s ease-in-out infinite;
+}
+
+.deco-dot:nth-child(2) {
+  animation-delay: 0.3s;
+}
+
+.deco-dot:nth-child(3) {
+  animation-delay: 0.6s;
+}
+
+@keyframes dot-float {
+  0%, 100% {
+    transform: translateY(0);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateY(-8rpx);
+    opacity: 1;
+  }
 }
 
 .set-btn {

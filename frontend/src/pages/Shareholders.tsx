@@ -46,13 +46,23 @@ export default function Shareholders() {
 
   // 数据获取
   useEffect(() => {
-    setLoading(true);
-    getShareholderList(page, pageSize, debouncedSearch || undefined).then((res) => {
-      if (res.code === 0) {
-        setShareholders(res.data.list || []);
-        setTotal(res.data.total || 0);
+    let cancelled = false;
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const res = await getShareholderList(page, pageSize, debouncedSearch || undefined);
+        if (!cancelled && res.code === 0) {
+          setShareholders(res.data.list || []);
+          setTotal(res.data.total || 0);
+        }
+      } catch {
+        // handle error
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    }).finally(() => setLoading(false));
+    };
+    fetchData();
+    return () => { cancelled = true; };
   }, [page, debouncedSearch]);
 
   const openEarnings = async (sh: User) => {

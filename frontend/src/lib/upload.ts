@@ -1,12 +1,12 @@
 // OSS PostObject 直传封装
 import { getOSSSignature, fixObjectInline } from './api';
 
-export const MAX_IMAGE_SIZE = 5 * 1024 * 1024; // 5MB
+export const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
 
 export function validateImageFile(file: File): string | null {
   if (!file.type.startsWith('image/')) return '请选择图片文件';
   if (file.size > MAX_IMAGE_SIZE) {
-    return `图片过大（${(file.size / 1024 / 1024).toFixed(1)}MB），请上传 5MB 以内的图片`;
+    return `图片过大（${(file.size / 1024 / 1024).toFixed(1)}MB），请上传 10MB 以内的图片`;
   }
   return null;
 }

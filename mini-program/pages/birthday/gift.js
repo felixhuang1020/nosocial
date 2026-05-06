@@ -6,6 +6,9 @@ Page({
   data: {
     isBirthday: false,
     birthday: '',
+    birthdayMonth: '',
+    birthdayDay: '',
+    birthdayMMDD: '',
     daysUntil: 0,
     giftInfo: null,
     giftClaimed: false,
@@ -54,18 +57,32 @@ Page({
   checkBirthday() {
     const birthday = this.data.birthday;
     if (!birthday) {
-      this.setData({ isBirthday: false, birthday: '' });
+      this.setData({
+        isBirthday: false,
+        birthday: '',
+        birthdayMonth: '',
+        birthdayDay: '',
+        birthdayMMDD: ''
+      });
       return;
     }
 
+    // 仅提取日期部分，避免时区偏移影响月日
+    const dateOnly = String(birthday).slice(0, 10);
+    const parts = dateOnly.split('-');
+    const month = parts[1] || '';
+    const day = parts[2] || '';
+    const mmdd = month && day ? `${month}-${day}` : '';
+
     const today = new Date();
-    const birthDate = new Date(birthday);
-    
-    const isToday = today.getMonth() === birthDate.getMonth() && 
-                    today.getDate() === birthDate.getDate();
-    
+    const birthMonthIdx = parseInt(month, 10) - 1;
+    const birthDayNum = parseInt(day, 10);
+
+    const isToday = today.getMonth() === birthMonthIdx &&
+                    today.getDate() === birthDayNum;
+
     // 计算距离下一个生日的天数
-    const nextBirthday = new Date(today.getFullYear(), birthDate.getMonth(), birthDate.getDate());
+    const nextBirthday = new Date(today.getFullYear(), birthMonthIdx, birthDayNum);
     if (nextBirthday < today) {
       nextBirthday.setFullYear(today.getFullYear() + 1);
     }
@@ -75,6 +92,9 @@ Page({
     this.setData({
       isBirthday: isToday,
       birthday: birthday,
+      birthdayMonth: month,
+      birthdayDay: day,
+      birthdayMMDD: mmdd,
       daysUntil: daysUntil
     });
   },
@@ -96,7 +116,7 @@ Page({
   // 获取礼品历史
   fetchGiftHistory() {
     get('/wx/birthday/history').then(res => {
-      const list = Array.isArray(res) ? res : [];
+      const list = res && res.list ? res.list : [];
       this.setData({ giftHistory: list });
     }).catch(err => {
       console.log('获取礼品历史失败');

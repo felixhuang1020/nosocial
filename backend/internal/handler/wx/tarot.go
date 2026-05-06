@@ -4,6 +4,7 @@ import (
 	"nosocial/internal/middleware"
 	"nosocial/internal/pkg/response"
 	"nosocial/internal/service"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -45,4 +46,20 @@ func (h *TarotHandler) History(c *gin.Context) {
 		"list":  readings,
 		"total": total,
 	})
+}
+
+func (h *TarotHandler) GetReadingByID(c *gin.Context) {
+	userID := middleware.GetWXUserID(c)
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		response.BadRequest(c, "参数错误")
+		return
+	}
+	reading, err := h.tarotService.GetReadingByID(userID, uint(id))
+	if err != nil {
+		response.Error(c, 1, "记录不存在")
+		return
+	}
+	response.Success(c, reading)
 }

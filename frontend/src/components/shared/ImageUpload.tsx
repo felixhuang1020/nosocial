@@ -117,7 +117,7 @@ export function ImageUpload({ value, onChange, className, dir }: ImageUploadProp
       >
         <ImagePlus className="h-8 w-8 text-text-muted" />
         <span className="text-xs text-text-muted">点击或拖拽上传</span>
-        <span className="text-[10px] text-text-muted/70">≤ 5MB</span>
+        <span className="text-[10px] text-text-muted/70">≤ 10MB</span>
         <input
           ref={inputRef}
           type="file"
@@ -212,7 +212,7 @@ export function MultiImageUpload({ value, onChange, dir, max = 9 }: MultiImageUp
             <span className="text-[11px] text-text-muted">
               {uploading ? '上传中' : `上传图片 (${value.length}/${max})`}
             </span>
-            <span className="text-[10px] text-text-muted/70">≤ 5MB</span>
+            <span className="text-[10px] text-text-muted/70">≤ 10MB</span>
           </div>
         )}
         <input

@@ -48,6 +48,23 @@ func NewApp(configPath string) (*App, error) {
 		return nil, err
 	}
 
+	// 生产环境配置完整性校验
+	if cfg.App.Mode == "release" {
+		// 微信支付配置
+		if cfg.WX.MchID == "" || cfg.WX.APIV3Key == "" || cfg.WX.MchCertSerial == "" {
+			return nil, fmt.Errorf("生产环境微信支付配置不完整: MchID/APIv3Key/MchCertSerial 不能为空")
+		}
+		// OSS配置
+		if cfg.OSS.AccessKeyID == "" || cfg.OSS.AccessKeySecret == "" || cfg.OSS.Bucket == "" {
+			return nil, fmt.Errorf("生产环境OSS配置不完整: AccessKeyID/AccessKeySecret/Bucket 不能为空")
+		}
+		// 数据库SSL
+		if cfg.PostgreSQL.SSLMode == "disable" {
+			// 仅警告，不阻塞启动
+			logger.Warn("生产环境建议启用PostgreSQL SSL连接 (sslmode=require)")
+		}
+	}
+
 	db, err := InitDB(&cfg.PostgreSQL)
 	if err != nil {
 		logger.Error("init db failed", zap.Error(err))

@@ -68,7 +68,7 @@ Page({
       success: (res) => {
         if (res.confirm) {
           post('/wx/shareholder/withdraw', {
-            amount: parseFloat(this.data.balance)
+            amount: Math.round(parseFloat(this.data.balance) * 100) / 100
           }).then(() => {
             wx.showToast({ title: '提现申请已提交', icon: 'success' });
             // 重新获取用户信息以刷新余额

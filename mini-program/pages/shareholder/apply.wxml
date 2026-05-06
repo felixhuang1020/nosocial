@@ -1,7 +1,7 @@
 <view class="container">
   <!-- 页面标题 -->
   <view class="page-header">
-    <t-icon name="crown" size="64rpx" color="#7C9A92" />
+    <t-icon name="user-vip-filled" size="64rpx" color="#7C9A92" />
     <text class="page-title">成为共享股东</text>
     <text class="page-subtitle">分享美酒，赚取佣金</text>
   </view>
@@ -10,7 +10,7 @@
   <view class="benefits-section">
     <view class="benefit-card">
       <view class="benefit-icon gold-gradient">
-        <t-icon name="money-circle" size="48rpx" color="#FFFFFF" />
+        <t-icon name="money-filled" size="48rpx" color="#FFFFFF" />
       </view>
       <view class="benefit-content">
         <text class="benefit-title">分享得佣金</text>
@@ -20,7 +20,7 @@
     
     <view class="benefit-card">
       <view class="benefit-icon rose-gradient">
-        <t-icon name="wine" size="48rpx" color="#FFFFFF" />
+        <t-icon name="drink-filled" size="48rpx" color="#FFFFFF" />
       </view>
       <view class="benefit-content">
         <text class="benefit-title">免费鸡尾酒</text>
@@ -30,7 +30,7 @@
     
     <view class="benefit-card">
       <view class="benefit-icon purple-gradient">
-        <t-icon name="gift" size="48rpx" color="#FFFFFF" />
+        <t-icon name="gift-filled" size="48rpx" color="#FFFFFF" />
       </view>
       <view class="benefit-content">
         <text class="benefit-title">生日专属礼品</text>

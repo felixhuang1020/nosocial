@@ -40,7 +40,7 @@ Page({
     this.setData({ loading: true });
 
     get('/wx/shareholder/team').then(res => {
-      const list = Array.isArray(res) ? res : (res && res.list ? res.list : []);
+      const list = res && res.list ? res.list : [];
       // totalCommission 同步 store 中当前股东的累计收益（由后端结算写入）
       const totalEarning = (appStore.totalEarning || '0.00');
       this.setData({

@@ -184,3 +184,18 @@ func (h *UserAdminHandler) UpdateStatus(c *gin.Context) {
 	}
 	response.Success(c, nil)
 }
+
+func (h *UserAdminHandler) SetShareholder(c *gin.Context) {
+	idStr := c.Param("id")
+	id, err := strconv.ParseUint(idStr, 10, 64)
+	if err != nil {
+		response.BadRequest(c, "无效的ID")
+		return
+	}
+
+	if err = h.userService.SetAsShareholder(id); err != nil {
+		response.Error(c, 1, err.Error())
+		return
+	}
+	response.Success(c, nil)
+}

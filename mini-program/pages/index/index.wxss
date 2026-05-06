@@ -148,26 +148,30 @@
   bottom: 0;
   left: 0;
   right: 0;
-  background: linear-gradient(transparent, rgba(245, 246, 248, 0.95));
-  padding: 60rpx 30rpx 30rpx;
+  background: linear-gradient(to top, rgba(245, 246, 248, 0.96) 0%, rgba(245, 246, 248, 0.82) 55%, rgba(245, 246, 248, 0) 100%);
+  padding: 80rpx 30rpx 28rpx;
 }
 
 .recommend-badge {
   position: absolute;
-  top: -180rpx;
+  top: 20rpx;
   right: 20rpx;
-  background: rgba(255, 77, 79, 0.9);
-  padding: 8rpx 20rpx;
-  border-radius: 12rpx;
-  display: flex;
+  z-index: 10;
+  background: rgba(255, 77, 79, 0.92);
+  padding: 10rpx 22rpx;
+  border-radius: 999rpx;
+  display: inline-flex;
   align-items: center;
   gap: 8rpx;
+  box-shadow: 0 4rpx 12rpx rgba(255, 77, 79, 0.25);
 }
 
-.recommend-badge text {
+.recommend-badge-text {
   font-size: 22rpx;
-  color: #fff;
+  color: #ffffff;
   font-weight: 600;
+  white-space: nowrap;
+  line-height: 1;
 }
 
 .recommend-info {

@@ -90,11 +90,11 @@
     <block wx:if="{{recommendDrink}}">
       <view class="recommend-card" bindtap="navigateToDrinkDetail" data-id="{{recommendDrink.id}}">
         <image class="recommend-image" src="{{recommendDrink.image_url}}" mode="aspectFill" lazy-load />
+        <view class="recommend-badge">
+          <t-icon name="heart-filled" size="22rpx" color="#ffffff" />
+          <text class="recommend-badge-text">店长推荐</text>
+        </view>
         <view class="recommend-overlay">
-          <view class="recommend-badge">
-            <t-icon name="heart-filled" size="24rpx" color="#ff4d4f" />
-            <text>店长推荐</text>
-          </view>
           <view class="recommend-info">
             <text class="recommend-name">{{recommendDrink.name}}</text>
             <text class="recommend-enname">{{recommendDrink.english_name}}</text>

@@ -17,18 +17,18 @@ import {
 import { DollarSign, Store, CreditCard } from 'lucide-react';
 
 const defaultSettings: AdminSettings = {
-  shareholder_fee: 99.00,
-  commission_rate: 0.10,
-  free_drink_id: 1,
-  review_coupon_amount: 20.00,
-  review_coupon_min_order: 0.00,
-  review_coupon_valid_days: 30,
-  name: 'NoSocial Bar',
-  address: '上海市静安区南京西路1266号',
-  phone: '021-6288-8888',
-  business_hours: '18:00 - 04:00',
-  wifi_name: 'NoSocial_Free',
-  wifi_password: 'nosocial888',
+  shareholder_fee: 0,
+  commission_rate: 0,
+  free_drink_id: 0,
+  review_coupon_amount: 0,
+  review_coupon_min_order: 0,
+  review_coupon_valid_days: 0,
+  name: '',
+  address: '',
+  phone: '',
+  business_hours: '',
+  wifi_name: '',
+  wifi_password: '',
 };
 
 export default function Settings() {
@@ -36,31 +36,29 @@ export default function Settings() {
   const [settings, setSettings] = useState<AdminSettings>(defaultSettings);
   const [drinks, setDrinks] = useState<Drink[]>([]);
   const [hasChanges, setHasChanges] = useState(false);
-  const [_loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    async function loadSettings() {
+      try {
+        const res = await getSettings();
+        if (res.code === 0 && res.data) {
+          setSettings({ ...defaultSettings, ...res.data });
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : '加载设置失败';
+        addToast({ type: 'error', message: msg });
+      } finally {
+        setLoading(false);
+      }
+    }
+    async function loadDrinks() {
+      const res = await getDrinkList(1, 100);
+      if (res.code === 0) setDrinks(res.data.list);
+    }
     loadSettings();
     loadDrinks();
-  }, []);
-
-  async function loadSettings() {
-    try {
-      const res = await getSettings();
-      if (res.code === 0 && res.data) {
-        setSettings({ ...defaultSettings, ...res.data });
-      }
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : '加载设置失败';
-      addToast({ type: 'error', message: msg });
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  async function loadDrinks() {
-    const res = await getDrinkList(1, 100);
-    if (res.code === 0) setDrinks(res.data.list);
-  }
+  }, [addToast]);
 
   const handleChange = (field: string, value: unknown) => {
     setSettings((prev) => ({ ...prev, [field]: value }));
@@ -87,6 +85,14 @@ export default function Settings() {
       addToast({ type: 'error', message: '保存失败' });
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <p className="text-text-muted text-sm">加载中...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

@@ -93,7 +93,7 @@ Page({
   // 领取免费酒水
   claimFreeDrink() {
     this.setData({ ordering: true });
-    post('/wx/free-drink/claim').then(() => {
+    post('/wx/free-drink/claim', { drink_id: parseInt(this.data.drinkId) }).then(() => {
       wx.showToast({ title: '领取成功', icon: 'success' });
       setTimeout(() => {
         wx.navigateTo({ url: '/pages/order/list' });
@@ -114,10 +114,8 @@ Page({
       success: (res) => {
         if (res.confirm) {
           this.setData({ ordering: true });
-          const price = parseFloat(this.data.drink.price) || 0;
           post('/wx/orders', {
-            total_amount: price,
-            discount_amount: 0
+            items: [{ drink_id: parseInt(this.data.drinkId), quantity: 1 }]
           }).then(res => {
             wx.showToast({ title: '下单成功', icon: 'success' });
             setTimeout(() => {

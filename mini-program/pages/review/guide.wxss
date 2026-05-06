@@ -135,6 +135,23 @@
   width: 100%;
 }
 
+/* 按钮内部：图标 + 文字水平居中（避免 t-button 默认 slot 内容换行） */
+.btn-inner {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 12rpx;
+  width: 100%;
+}
+
+.btn-text {
+  font-size: 30rpx;
+  font-weight: 600;
+  color: #FFFFFF;
+  line-height: 1;
+}
+
 .already-reviewed {
   display: flex;
   align-items: center;

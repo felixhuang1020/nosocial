@@ -33,14 +33,24 @@ export default function Orders() {
   }, []);
 
   useEffect(() => {
-    setLoading(true);
-    const status = filterStatus === 'all' ? undefined : Number(filterStatus);
-    getOrderList(page, pageSize, status).then((res) => {
-      if (res.code === 0) {
-        setOrders(res.data.list || []);
-        setTotal(res.data.total || 0);
+    let cancelled = false;
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const status = filterStatus === 'all' ? undefined : Number(filterStatus);
+        const res = await getOrderList(page, pageSize, status);
+        if (!cancelled && res.code === 0) {
+          setOrders(res.data.list || []);
+          setTotal(res.data.total || 0);
+        }
+      } catch {
+        // handle error
+      } finally {
+        if (!cancelled) setLoading(false);
       }
-    }).finally(() => setLoading(false));
+    };
+    fetchData();
+    return () => { cancelled = true; };
   }, [page, filterStatus]);
 
   // 订单号前端搜索（后端不支持 order_no 搜索）

@@ -126,6 +126,7 @@ func SetupRouter(app *bootstrap.App) *gin.Engine {
 
 			wxAuth.POST("/tarot/divine", wxTarotHandler.Divine)
 			wxAuth.GET("/tarot/history", wxTarotHandler.History)
+			wxAuth.GET("/tarot/history/:id", wxTarotHandler.GetReadingByID)
 
 			wxAuth.GET("/birthday/gift", wxBirthdayHandler.CheckGift)
 			wxAuth.POST("/birthday/claim", wxBirthdayHandler.Claim)
@@ -164,6 +165,7 @@ func SetupRouter(app *bootstrap.App) *gin.Engine {
 
 			adminAuth.GET("/users", userAdminHandler.List)
 			adminAuth.PUT("/users/:id/status", userAdminHandler.UpdateStatus)
+			adminAuth.POST("/users/:id/set-shareholder", userAdminHandler.SetShareholder)
 
 			adminAuth.GET("/shareholders", shareholderAdminHandler.List)
 			adminAuth.GET("/shareholders/:id/earnings", shareholderAdminHandler.Earnings)

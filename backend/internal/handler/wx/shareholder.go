@@ -81,7 +81,10 @@ func (h *ShareholderHandler) Team(c *gin.Context) {
 		response.Error(c, 1, err.Error())
 		return
 	}
-	response.Success(c, team)
+	response.Success(c, map[string]interface{}{
+		"list":  team,
+		"total": len(team),
+	})
 }
 
 func (h *ShareholderHandler) Withdraw(c *gin.Context) {

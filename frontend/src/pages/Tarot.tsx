@@ -372,7 +372,7 @@ export default function Tarot() {
               <span className="text-sm text-text-secondary">
                 {uploading ? '上传中...' : '点击选择新图片'}
               </span>
-              <span className="text-[10px] text-text-muted">支持 JPG / PNG / WebP，≤ 5MB</span>
+              <span className="text-[10px] text-text-muted">支持 JPG / PNG / WebP，≤ 10MB</span>
               <input
                 ref={imageInputRef}
                 type="file"

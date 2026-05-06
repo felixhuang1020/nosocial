@@ -32,7 +32,7 @@
             <view class="user-name-row">
               <text class="user-name">{{nickname || '酒友'}}</text>
               <view class="user-tag shareholder-tag" wx:if="{{isShareholder}}">
-                <t-icon name="vip" size="20rpx" color="#7C9A92" />
+                <t-icon name="user-vip" size="20rpx" color="#7C9A92" />
                 <text>股东</text>
               </view>
               <view class="user-tag member-tag" wx:if="{{!isShareholder}}">
@@ -86,7 +86,7 @@
           t-class="menu-cell"
           t-class-title="menu-cell-title"
         >
-          <t-icon slot="left-icon" name="user-group" size="40rpx" color="#7C9A92" />
+          <t-icon slot="left-icon" name="usergroup" size="40rpx" color="#7C9A92" />
         </t-cell>
         <t-cell 
           title="邀请好友" 
@@ -105,7 +105,7 @@
       <view class="menu-title">加入股东</view>
       <view class="become-shareholder-card" bindtap="navigateToApply">
         <view class="bsc-content">
-          <t-icon name="money-circle" size="64rpx" color="#7C9A92" />
+          <t-icon name="money-filled" size="64rpx" color="#7C9A92" />
           <view class="bsc-text">
             <text class="bsc-title">成为共享股东</text>
             <text class="bsc-desc">分享得佣金 · 免费鸡尾酒 · 生日礼品</text>

@@ -43,6 +43,12 @@ func (d *TarotReadingDAO) Create(reading *model.TarotReading) error {
 	return d.db.Create(reading).Error
 }
 
+func (d *TarotReadingDAO) GetByID(userID uint64, readingID uint) (*model.TarotReading, error) {
+	var reading model.TarotReading
+	err := d.db.Where("id = ? AND user_id = ?", readingID, userID).First(&reading).Error
+	return &reading, err
+}
+
 func (d *TarotReadingDAO) ListByUser(userID uint64, offset, limit int) ([]*model.TarotReading, int64, error) {
 	var readings []*model.TarotReading
 	var total int64

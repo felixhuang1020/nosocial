@@ -77,8 +77,10 @@
       size="large"
       bindtap="goToDianping"
     >
-      <t-icon name="jump" size="32rpx" color="#FFFFFF" />
-      <text style="margin-left: 12rpx;">去大众点评点评</text>
+      <view class="btn-inner">
+        <t-icon name="jump" size="32rpx" color="#FFFFFF" />
+        <text class="btn-text">去大众点评点评</text>
+      </view>
     </t-button>
     <view class="already-reviewed" bindtap="goToSubmit">
       <text>已经点评过了？</text>

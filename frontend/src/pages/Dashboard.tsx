@@ -30,7 +30,7 @@ export default function Dashboard() {
   const [revenueTrend, setRevenueTrend] = useState<RevenueDataPoint[]>([]);
   const [orders, setOrders] = useState<Order[]>([]);
   const [reviews, setReviews] = useState<Review[]>([]);
-  const [_loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function load() {
@@ -56,7 +56,15 @@ export default function Dashboard() {
       }
     }
     load();
-  }, []);
+  }, [addToast]);
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center py-24">
+        <p className="text-text-muted text-sm">加载中...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

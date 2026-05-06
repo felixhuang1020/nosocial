@@ -157,6 +157,9 @@ func Load(path string) (*Config, error) {
 	if val := os.Getenv("NOSOCIAL_POSTGRESQL_DBNAME"); val != "" {
 		cfg.PostgreSQL.DBName = val
 	}
+	if val := os.Getenv("NOSOCIAL_POSTGRESQL_SSLMODE"); val != "" {
+		cfg.PostgreSQL.SSLMode = val
+	}
 	// Redis
 	if val := os.Getenv("NOSOCIAL_REDIS_HOST"); val != "" {
 		cfg.Redis.Host = val

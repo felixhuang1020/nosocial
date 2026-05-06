@@ -13,7 +13,7 @@ postgresql:
   user: ""               # 从环境变量 NOSOCIAL_POSTGRESQL_USER 读取
   password: ""           # 从环境变量 NOSOCIAL_POSTGRESQL_PASSWORD 读取
   dbname: ""             # 从环境变量 NOSOCIAL_POSTGRESQL_DBNAME 读取
-  sslmode: "disable"
+  sslmode: "require"  # 生产环境必须启用SSL; 开发环境可通过环境变量 NOSOCIAL_POSTGRESQL_SSLMODE=disable 覆盖
   timezone: "Asia/Shanghai"
   max_idle_conns: 10
   max_open_conns: 100

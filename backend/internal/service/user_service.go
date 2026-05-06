@@ -4,10 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log"
 	"nosocial/config"
 	"nosocial/internal/dao"
 	"nosocial/internal/model"
 	"nosocial/internal/pkg/jwt"
+	"nosocial/internal/pkg/utils"
 	"nosocial/internal/pkg/wx"
 	"strings"
 	"time"
@@ -51,6 +53,7 @@ func (s *UserService) WXLogin(req *WXLoginReq) (*WXLoginResp, error) {
 
 	sess, err := wx.JSCode2Session(ctx, s.wxCfg.AppID, s.wxCfg.Secret, req.Code)
 	if err != nil {
+		log.Printf("[UserService.WXLogin] code2session failed: %v", err)
 		return nil, fmt.Errorf("invalid wx code")
 	}
 	openid := sess.OpenID
@@ -180,4 +183,34 @@ func (s *UserService) ClaimFreeDrink(userID uint64) error {
 		return fmt.Errorf("free drink already claimed")
 	}
 	return nil
+}
+
+// SetAsShareholder 管理员手动设置用户为共享股东
+func (s *UserService) SetAsShareholder(userID uint64) error {
+	user, err := s.userDAO.GetByID(userID)
+	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return fmt.Errorf("用户不存在")
+		}
+		return err
+	}
+	if user.IsShareholder == 1 {
+		return fmt.Errorf("该用户已是股东")
+	}
+
+	// 生成唯一邀请码（重试最多5次）
+	var inviteCode string
+	for i := 0; i < 5; i++ {
+		code := utils.GenerateInviteCode()
+		_, err := s.userDAO.GetByInviteCode(code)
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			inviteCode = code
+			break
+		}
+	}
+	if inviteCode == "" {
+		return fmt.Errorf("邀请码生成失败，请重试")
+	}
+
+	return s.userDAO.SetAsShareholder(userID, inviteCode)
 }
